@@ -13,6 +13,7 @@ A local image auto-tagging and search system. Uses vision-language models (via O
 - **Multiple backends**: Ollama (local deployment), OpenAI-compatible API
 - **Multi-language tags**: English, Chinese, Japanese, Korean, Spanish, French, German, Russian
 - **Optimized Chinese prompts**: Multi-dimensional tagging strategy for high-quality Chinese tags
+- **Parallel processing**: Configurable multi-threaded processing for faster batch tagging (default: 5 workers)
 - **Incremental processing**: Automatically skips already-processed images; safe to resume after interruption
 - **Auto indexing**: Inverted index and FTS5 full-text search index are built automatically after each run
 - **Configurable prompts**: Customize model prompts via YAML files
@@ -213,6 +214,23 @@ uv run python src/main.py --image-path ~/Pictures
 # CLI arguments override .env values
 uv run python src/main.py --image-path ~/Pictures --language en --tag-count 20
 ```
+
+**Parallel Processing Recommendations:**
+
+Configure `MAX_WORKERS` based on your system memory:
+
+| System Memory | Recommended MAX_WORKERS | Notes |
+|--------------|-------------------------|-------|
+| 8GB or less  | 1-2                     | Use serial or minimal parallel processing |
+| 16GB         | 3-5                     | Default configuration works well |
+| 32GB         | 5-10                    | Can handle higher parallelism |
+| 64GB+        | 10-20                   | Maximum performance for large batches |
+
+**Considerations:**
+- Each worker loads the model into memory
+- Vision-language models typically use 2-4GB per worker
+- Monitor system resources (RAM, CPU) during processing
+- Reduce `MAX_WORKERS` if you experience out-of-memory errors
 
 ---
 
