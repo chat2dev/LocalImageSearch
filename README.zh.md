@@ -118,12 +118,29 @@ uv run python src/main.py --image-path ~/Pictures --language en --tag-count 20
 - 并行（5 workers）：87.8秒（提升 8.5%）
 - 并行（10 workers）：80.1秒但3张失败（超时）
 
+**Ollama 配置优化：**
+
+为了获得更好的并行性能，需要配置 Ollama 支持更多并发请求：
+
+```bash
+# 停止 Ollama（如果在运行）
+pkill ollama
+
+# 启动 Ollama 并增加并行度（允许6个并发请求）
+OLLAMA_NUM_PARALLEL=6 ollama serve
+```
+
+使用此配置后，性能提升更明显：
+- 3 workers：提升 8.5%（默认配置仅 6.6%）
+- 5 workers：提升 9.3%（默认配置仅 8.5%）
+
 **注意事项：**
 - 每个 worker 会将模型加载到内存中
 - 视觉语言模型通常每个 worker 占用 2-4GB 内存
 - 处理过程中监控系统资源（内存、CPU）使用情况
 - 如遇内存不足错误，请降低 `MAX_WORKERS` 值
 - 小批量处理时，串行模式可能已足够
+- **推荐配置**：`OLLAMA_NUM_PARALLEL=6` + `MAX_WORKERS=5`
 
 ---
 

@@ -246,12 +246,29 @@ Configure `MAX_WORKERS` based on your system memory:
 - Parallel (5 workers): 87.8s (8.5% faster)
 - Parallel (10 workers): 80.1s but 3 failures (timeouts)
 
+**Ollama Configuration Optimization:**
+
+To get better parallel performance, configure Ollama to handle more concurrent requests:
+
+```bash
+# Stop Ollama if running
+pkill ollama
+
+# Start Ollama with increased parallelism (allows 6 concurrent requests)
+OLLAMA_NUM_PARALLEL=6 ollama serve
+```
+
+With this configuration, performance improves:
+- 3 workers: 8.5% faster (vs 6.6% without)
+- 5 workers: 9.3% faster (vs 8.5% without)
+
 **Considerations:**
 - Each worker loads the model into memory
 - Vision-language models typically use 2-4GB per worker
 - Monitor system resources (RAM, CPU) during processing
 - Reduce `MAX_WORKERS` if you experience out-of-memory errors
 - For small batches, serial processing may be sufficient
+- **Recommended setup**: `OLLAMA_NUM_PARALLEL=6` with `MAX_WORKERS=5`
 
 ---
 
