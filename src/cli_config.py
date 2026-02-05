@@ -8,7 +8,7 @@ import os
 
 
 # Application data directory under user home
-APP_DATA_DIR = Path.home() / "LocalImageSearch" / ".data"
+APP_DATA_DIR = Path.home() / ".LocalImageSearch" / "data"
 
 
 def ensure_app_dirs():

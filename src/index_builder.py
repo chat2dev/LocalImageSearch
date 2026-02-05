@@ -373,7 +373,8 @@ def main():
 
     # ── build ──
     build_p = sub.add_parser("build", help="Build/rebuild indexes")
-    build_p.add_argument("--db", default="./data/image_tags.db", help="DB Path")
+    default_db = str(Path.home() / ".LocalImageSearch" / "data" / "image_tags.db")
+    build_p.add_argument("--db", default=default_db, help="DB Path")
 
     # ── search ──
     search_p = sub.add_parser("search", help="Search images")
@@ -390,11 +391,11 @@ def main():
         default="any",
         help="Multi-tag match mode: any=union, all=intersection (only effective with --mode tags)",
     )
-    search_p.add_argument("--db", default="./data/image_tags.db", help="DB Path")
+    search_p.add_argument("--db", default=default_db, help="DB Path")
 
     # ── stats ──
     stats_p = sub.add_parser("stats", help="Show index statistics")
-    stats_p.add_argument("--db", default="./data/image_tags.db", help="DB Path")
+    stats_p.add_argument("--db", default=default_db, help="DB Path")
 
     args = parser.parse_args()
 
