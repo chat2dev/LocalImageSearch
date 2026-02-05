@@ -227,15 +227,24 @@ Configure `MAX_WORKERS` based on your system memory:
 | 64GB+        | 10-20                   | Maximum performance for large batches |
 
 **Performance Expectations:**
-- **Small batches (<20 images)**: 10-20% speedup with parallel processing
-- **Large batches (>100 images)**: More noticeable improvement
+- **Small batches (<20 images)**: 6-9% speedup with parallel processing
+- **Large batches (>100 images)**: May see more improvement, but limited by Ollama
 - **Bottleneck**: Waiting for Ollama API responses (I/O bound)
 - **Limitation**: Ollama may serialize requests internally, limiting parallel gains
+- **Warning**: Too many workers (>5) can cause API timeouts
 
-**Benchmark (5 test images):**
+**Benchmark Results:**
+
+*Test 1: 5 images*
 - Serial (1 worker): 22.8s
 - Parallel (3 workers): 20.8s (9% faster)
 - Parallel (5 workers): 19.4s (15% faster)
+
+*Test 2: 17 images*
+- Serial (1 worker): 95.9s
+- Parallel (3 workers): 89.6s (6.6% faster)
+- Parallel (5 workers): 87.8s (8.5% faster)
+- Parallel (10 workers): 80.1s but 3 failures (timeouts)
 
 **Considerations:**
 - Each worker loads the model into memory
