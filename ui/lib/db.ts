@@ -22,6 +22,23 @@ export function getDb(): Database.Database {
 
     db = new Database(DB_PATH);
     db.pragma('journal_mode = WAL');
+
+    // Check if tables exist
+    try {
+      const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='image_tags'").all();
+      if (tables.length === 0) {
+        throw new Error(
+          'Database not initialized. Please run: uv run python scripts/init_database.py'
+        );
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('no such table')) {
+        throw new Error(
+          'Database tables not found. Please run: uv run python scripts/init_database.py'
+        );
+      }
+      throw error;
+    }
   }
   return db;
 }

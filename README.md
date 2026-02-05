@@ -22,119 +22,130 @@ A local image auto-tagging and search system. Uses vision-language models (via O
 
 ---
 
-## Web UI
-
-A modern web interface is available in the `ui/` directory, providing:
-
-- **Bilingual Interface**: Switch between Chinese and English
-- **Tag Cloud**: Browse images by popular tags (configurable TOP 20/100)
-- **Multi-tag Filtering**: AND-based filtering using inverted index
-- **Full-text Search**: Search across tags and descriptions
-- **Responsive Grid**: Image gallery with pagination
-- **Image Viewer**: Modal viewer with fullscreen support
-
-### Quick Start (Web UI)
-
-```bash
-cd ui
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-**Database Location**: The UI stores its database in `~/.LocalImageSearch/data/image_tags.db` (automatically created).
-
-For detailed configuration and usage, see [ui/README.md](ui/README.md).
-
----
-
-## Docker Deployment
-
-A complete Docker setup is available with automatic database initialization.
-
-### Quick Start (Docker)
-
-```bash
-# 1. Pull the Ollama model (one-time setup)
-ollama pull qwen3-vl:4b
-
-# 2. Start all services
-docker-compose up -d
-
-# 3. View logs
-docker logs -f image-tagger-app
-```
-
-The system will:
-1. Initialize a fresh database with the latest schema
-2. Tag all images in `~/Downloads` (configurable in `docker-compose.yml`)
-3. Build search indexes automatically
-4. Keep the container running for Web UI access
-
-### Database Behavior
-
-**Important**: The database is **NOT mounted** from the host. It is created fresh inside the container on each startup.
-
-**Why?**
-- Ensures the database schema is always up-to-date
-- Avoids schema migration issues
-- Simplifies deployment and testing
-
-**Implications:**
-- Container restart = data loss (tags will be regenerated)
-- For production use with persistent data, uncomment the volume mount in `docker-compose.yml`:
-  ```yaml
-  volumes:
-    - ./data:/app/data  # Add this line to persist database
-  ```
-
-### Viewing Results
-
-While the container is running:
-
-```bash
-# Check tagging progress
-docker logs image-tagger-app | grep "Successfully processed"
-
-# Query database inside container
-docker exec image-tagger-app uv run python -c "
-from src.db_manager import Database
-db = Database('data/image_tags.db')
-print(f'Total records: {db.count_tags()}')
-db.close()
-"
-
-# Or use the Web UI
-open http://localhost:3000
-```
-
-### Configuration
-
-Edit `docker-compose.yml` to customize:
-- Image source directory (default: `~/Downloads`)
-- Model name (default: `qwen3-vl:4b`)
-- Language (default: `zh`)
-- Tag count (default: `5`)
-
----
-
 ## Prerequisites
+
+### Required Software
 
 - Python >= 3.8.1
 - [uv](https://docs.astral.sh/uv/) (recommended) or pip
+- Node.js >= 18 (for Web UI)
 - At least one model backend:
   - [Ollama](https://ollama.ai) (default, recommended for local deployment)
   - OpenAI-compatible inference service (vLLM / Together / cloud provider APIs, etc.)
+
+### Installation by Platform
+
+<details>
+<summary><b>macOS</b></summary>
+
+```bash
+# Install Homebrew (if not already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Python
+brew install python
+
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install Node.js (for Web UI)
+brew install node
+
+# Install Ollama
+brew install ollama
+# Or download from: https://ollama.ai/download
+```
+</details>
+
+<details>
+<summary><b>Linux (Ubuntu/Debian)</b></summary>
+
+```bash
+# Update package list
+sudo apt update
+
+# Install Python
+sudo apt install python3 python3-pip python3-venv
+
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install Node.js
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+```
+</details>
+
+<details>
+<summary><b>Linux (CentOS/RHEL/Fedora)</b></summary>
+
+```bash
+# Install Python
+sudo dnf install python3 python3-pip
+
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install Node.js
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo dnf install -y nodejs
+
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+```
+</details>
+
+<details>
+<summary><b>Windows</b></summary>
+
+```powershell
+# Install using Scoop (recommended)
+# First install Scoop: https://scoop.sh/
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+
+# Install Python
+scoop install python
+
+# Install uv
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Install Node.js
+scoop install nodejs
+
+# Install Ollama
+# Download and install from: https://ollama.com/download/windows
+```
+
+Alternatively, use [Chocolatey](https://chocolatey.org/):
+```powershell
+# Install Python
+choco install python
+
+# Install Node.js
+choco install nodejs
+
+# uv and Ollama: follow instructions above
+```
+</details>
 
 ---
 
 ## Installation
 
+### 1. Clone Repository
+
 ```bash
 git clone https://github.com/chat2dev/LocalImageSearch.git
 cd LocalImageSearch
+```
 
+### 2. Backend Setup
+
+```bash
 # Using uv (recommended)
 uv sync
 
@@ -144,11 +155,41 @@ uv sync
 # - Lock dependencies in uv.lock for reproducibility
 ```
 
+### 3. Install Ollama Model
+
+```bash
+# Pull the vision-language model (one-time setup, ~3.3GB)
+ollama pull qwen3-vl:4b
+```
+
+### 4. Web UI Setup (Optional)
+
+```bash
+cd ui
+npm install
+cd ..
+```
+
 ---
 
 ## Quick Start
 
-The following examples use Ollama + qwen3-vl:4b (run `ollama pull qwen3-vl:4b` first):
+### Step 0: Initialize Database (First-Time Setup)
+
+**Important**: Initialize the database before first use:
+
+```bash
+# Initialize database with schema
+uv run python scripts/init_database.py
+```
+
+This creates the database at `~/.LocalImageSearch/data/image_tags.db` with all necessary tables and indexes. You only need to do this once.
+
+> **Note**: If you skip this step and start the Web UI directly, you'll see errors because the database tables don't exist yet.
+
+### Option 1: Command Line Interface
+
+Tag images and search from the command line:
 
 ```bash
 # Tag a single image with 10 Chinese tags
@@ -162,6 +203,39 @@ uv run python src/index_builder.py search "人工智能" --mode tag
 ```
 
 Tags are saved to `data/image_tags.db` and indexes are built automatically on completion.
+
+### Option 2: Web UI (Recommended)
+
+Start the web interface for a better browsing experience:
+
+```bash
+cd ui
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+**Web UI Features:**
+- **Bilingual Interface**: Switch between Chinese and English
+- **Tag Cloud**: Browse images by popular tags (configurable TOP 20/100)
+- **Multi-tag Filtering**: AND-based filtering using inverted index
+- **Full-text Search**: Search across tags and descriptions
+- **Responsive Grid**: Image gallery with pagination
+- **Image Viewer**: Modal viewer with fullscreen support
+
+**Database Location**: The UI reads from `~/.LocalImageSearch/data/image_tags.db`.
+
+**Recommended Workflow:**
+1. Initialize database (first time only): `uv run python scripts/init_database.py`
+2. Tag images using CLI: `uv run python src/main.py --image-path ~/Pictures`
+3. Start Web UI: `cd ui && npm run dev`
+4. Browse and search your tagged images at http://localhost:3000
+
+> **Tip**: You can run the tagging command multiple times with different directories. New images will be added to the existing database.
+
+For detailed Web UI configuration, see [ui/README.md](ui/README.md).
+
+---
 
 ## Chinese Tag Quality
 
@@ -331,6 +405,76 @@ When `description` contains content, `--mode fts` can perform more granular sear
 | `column:word` | Search specific column | `tags:人工智能` |
 
 > Note: FTS5 matches at the token level, not substring level. `--mode fts` automatically falls back to a LIKE substring search when FTS returns no results, so it is safe to use as the default search mode.
+
+---
+
+## Docker Deployment
+
+**Alternative deployment option**: A complete Docker setup is available with automatic database initialization.
+
+### Quick Start (Docker)
+
+```bash
+# 1. Pull the Ollama model (one-time setup)
+ollama pull qwen3-vl:4b
+
+# 2. Start all services
+docker-compose up -d
+
+# 3. View logs
+docker logs -f image-tagger-app
+```
+
+The system will:
+1. Initialize a fresh database with the latest schema
+2. Tag all images in `~/Downloads` (configurable in `docker-compose.yml`)
+3. Build search indexes automatically
+4. Keep the container running for Web UI access
+
+### Database Behavior
+
+**Important**: The database is **NOT mounted** from the host. It is created fresh inside the container on each startup.
+
+**Why?**
+- Ensures the database schema is always up-to-date
+- Avoids schema migration issues
+- Simplifies deployment and testing
+
+**Implications:**
+- Container restart = data loss (tags will be regenerated)
+- For production use with persistent data, uncomment the volume mount in `docker-compose.yml`:
+  ```yaml
+  volumes:
+    - ./data:/app/data  # Add this line to persist database
+  ```
+
+### Viewing Results
+
+While the container is running:
+
+```bash
+# Check tagging progress
+docker logs image-tagger-app | grep "Successfully processed"
+
+# Query database inside container
+docker exec image-tagger-app uv run python -c "
+from src.db_manager import Database
+db = Database('data/image_tags.db')
+print(f'Total records: {db.count_tags()}')
+db.close()
+"
+
+# Or use the Web UI
+open http://localhost:3000
+```
+
+### Configuration
+
+Edit `docker-compose.yml` to customize:
+- Image source directory (default: `~/Downloads`)
+- Model name (default: `qwen3-vl:4b`)
+- Language (default: `zh`)
+- Tag count (default: `5`)
 
 ---
 
