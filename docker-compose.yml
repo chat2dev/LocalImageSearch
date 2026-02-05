@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # Ollama service for model inference
+  ollama:
+    image: ollama/ollama:latest
+    container_name: image-tagger-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ~/.ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - image-tagger-network
+
+  # Image tagging application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: image-tagger-app
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      # Mount test images (optional, for manual testing)
+      - ./tests/fixtures/test_images:/app/tests/fixtures/test_images:ro
+      # Mount any custom images (optional)
+      - ./custom_images:/app/custom_images:ro
+      # Mount Downloads directory for real-world testing
+      # Replace ~/Downloads with your actual image directory
+      - ~/Downloads:/app/downloads:ro
+      # Note: Database is NOT mounted - it's created fresh in the container
+      # This ensures the schema is always up-to-date
+    networks:
+      - image-tagger-network
+    command: >
+      bash -c "
+        echo '========================================' &&
+        echo 'Image Auto-Tagging System - Docker' &&
+        echo '========================================' &&
+        echo '' &&
+        echo 'Step 1: Verifying uv and dependencies...' &&
+        uv --version &&
+        uv run python -c 'import PIL; import requests; import yaml; import tqdm; print(\"✓ All dependencies installed\")' &&
+        echo '' &&
+        echo 'Step 2: Checking Ollama connection and model...' &&
+        uv run python -c 'import requests; requests.get(\"http://ollama:11434/api/tags\").raise_for_status(); print(\"✓ Ollama service is ready\")' &&
+        uv run python -c 'import requests; r = requests.get(\"http://ollama:11434/api/tags\"); models = [m[\"name\"] for m in r.json().get(\"models\",[])] ; print(f\"  Available models: {models}\"); assert \"qwen3-vl:4b\" in models, \"qwen3-vl:4b not found\"' &&
+        echo '' &&
+        echo 'Step 3: Initializing database with latest schema...' &&
+        chmod +x /app/scripts/init_db.sh &&
+        /app/scripts/init_db.sh &&
+        echo '' &&
+        echo 'Step 4: Running image tagging on /app/downloads...' &&
+        uv run python src/main.py --image-path /app/downloads --model qwen3-vl:4b --model-type ollama --api-base http://ollama:11434 --language zh --tag-count 5 --db-path data/image_tags.db &&
+        echo '' &&
+        echo 'Step 5: Verifying database...' &&
+        uv run python -c 'import sqlite3; conn = sqlite3.connect(\"data/image_tags.db\"); cursor = conn.cursor(); cursor.execute(\"SELECT COUNT(*) FROM image_tags\"); count = cursor.fetchone()[0]; print(f\"✓ Database contains {count} record(s)\"); cursor.execute(\"SELECT image_path, tags, language FROM image_tags LIMIT 3\"); [print(f\"  - {r[0]} | tags: {r[1]} | lang: {r[2]}\") for r in cursor.fetchall()]; conn.close()' &&
+        echo '' &&
+        echo 'Step 6: Building search index...' &&
+        uv run python src/index_builder.py build --db data/image_tags.db &&
+        echo '' &&
+        echo '========================================' &&
+        echo '✓ Tagging and indexing complete!' &&
+        echo '========================================' &&
+        echo '' &&
+        echo 'Keeping container running...' &&
+        tail -f /dev/null
+      "
+
+  # Web UI service
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: image-search-ui
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount data directory to access database (read-only since UI only reads)
+      - ./data:/app/data:ro
+      # Mount image directories (adjust paths as needed)
+      - ./custom_images:/app/custom_images:ro
+      - ./tests/fixtures/test_images:/app/tests/fixtures/test_images:ro
+      # Mount Downloads directory for real images
+      # Replace ~/Downloads with your actual image directory
+      - ~/Downloads:/app/downloads:ro
+      - ~/Downloads:/downloads:ro
+    environment:
+      - NODE_ENV=production
+    networks:
+      - image-tagger-network
+    depends_on:
+      - app
+
+networks:
+  image-tagger-network:
+    name: image-tagger-network

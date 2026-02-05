@@ -1,0 +1,61 @@
+# 自定义Prompt配置示例
+# 本文件展示如何自定义prompt来改变模型的行为
+
+# System prompts - 定义模型角色
+system_prompts:
+  zh: "你是一个专业的图片标签生成器。请直接输出逗号分隔的关键词标签，不要添加任何额外说明。"
+  en: "You are a professional image tagger. Output ONLY comma-separated tags without any explanations."
+  default: "You are a vision AI that generates ONLY comma-separated tags."
+
+# Tag generation prompts - 标签生成指令
+tag_prompts:
+  # 中文prompt - 强调艺术风格和细节
+  zh: |
+    请为这张图片生成{tag_count}个中文标签，用逗号分隔。
+    标签应该包括：主题、风格、颜色、情绪、构图等方面。
+    只输出标签，不要其他内容。
+    标签：
+
+  # 英文prompt - 强调技术细节
+  en: |
+    Generate {tag_count} tags for this image in {language_name}, comma-separated.
+    Include: subject, style, colors, mood, composition, technical aspects.
+    Output only tags, nothing else.
+    Tags:
+
+  default: "List {tag_count} tags for this image, comma-separated, in {language_name}. Output only the tags.\nTags: "
+
+# Description generation prompts
+description_prompts:
+  zh: |
+    请用中文详细描述这张图片。
+    描述应包括：
+    1. 主要内容和主题
+    2. 视觉风格和艺术特点
+    3. 色彩运用
+    4. 构图和布局
+    5. 整体氛围和感受
+    只输出描述内容，不要添加前缀或标题。
+
+  en: |
+    Describe this image in detail in {language_name}.
+    Include:
+    1. Main subject and theme
+    2. Visual style and artistic characteristics
+    3. Color usage
+    4. Composition and layout
+    5. Overall atmosphere and feeling
+    Return only the description without prefixes.
+
+  default: "Describe this image in detail in {language_name}."
+
+# Language name mappings
+language_names:
+  en: "English"
+  zh: "Chinese"
+  ja: "Japanese"
+  ko: "Korean"
+  es: "Spanish"
+  fr: "French"
+  de: "German"
+  ru: "Russian"

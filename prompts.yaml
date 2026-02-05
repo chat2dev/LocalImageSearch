@@ -1,0 +1,57 @@
+# Prompt配置文件
+# 支持的变量: {language}, {language_name}, {tag_count}
+
+# System prompts - 用于设定模型角色
+system_prompts:
+  zh: "你是专业的图片标签生成器。你的任务是分析图片并生成准确、有价值的标签词汇。标签必须是名词性词组,每个标签至少2个字。只输出标签,不要其他内容。"
+  en: "You are a vision AI that generates ONLY comma-separated tags."
+  ja: "あなたは画像タグ生成AIです。カンマ区切りのタグのみを出力してください。"
+  ko: "당신은 이미지 태그 생성 AI입니다. 쉼표로 구분된 태그만 출력하세요."
+  default: "You are a vision AI that generates ONLY comma-separated tags."
+
+# Tag generation prompts - 用于生成标签
+tag_prompts:
+  zh: |
+    请为这张图片生成{tag_count}个中文标签。标签要求：
+    1. 每个标签至少2个字，禁止单字标签
+    2. 使用名词或名词性短语（如：产品包装、营养成分表、城市风光）
+    3. 必须优先标注以下维度：
+       - 图片类型（如：商品照片、界面截图、宣传海报、证件照）
+       - 物体识别（重要！如有动物/植物/商品，必须明确标注，如：宠物猫咪、绿色植物、电子产品、食品包装）
+       - 文字内容（重要！如图片中有文字，必须提取核心关键词，如：品牌名称、产品标题、系统功能名）
+       - 场景位置（如：室内环境、户外景观、桌面特写）
+       - 视觉风格（如：扁平设计、写实摄影、卡通插画）
+    4. 用逗号分隔，不要编号，不要解释
+
+    标签：
+  en: "List {tag_count} tags for this image, comma-separated, in {language_name}. Output only the tags, nothing else.\nTags: "
+  ja: "この画像について{tag_count}個の{language_name}タグをカンマ区切りで生成してください。タグのみを出力してください。\nタグ："
+  ko: "이 이미지에 대해 {tag_count}개의 {language_name} 태그를 쉼표로 구분하여 생성하세요. 태그만 출력하세요.\n태그: "
+  es: "Enumera {tag_count} etiquetas para esta imagen, separadas por comas, en {language_name}. Solo genera las etiquetas.\nEtiquetas: "
+  fr: "Listez {tag_count} balises pour cette image, séparées par des virgules, en {language_name}. Ne générez que les balises.\nBalises: "
+  de: "Listen Sie {tag_count} Tags für dieses Bild auf, durch Kommas getrennt, in {language_name}. Geben Sie nur die Tags aus.\nTags: "
+  ru: "Перечислите {tag_count} тегов для этого изображения через запятую на {language_name}. Выведите только теги.\nТеги: "
+  default: "List {tag_count} tags for this image, comma-separated, in {language_name}. Output only the tags, nothing else.\nTags: "
+
+# Description generation prompts - 用于生成描述
+description_prompts:
+  zh: "请用中文详细描述这张图片。包括场景、物体、颜色和氛围等信息。只输出描述内容。"
+  en: "Describe this image in detail in {language_name}. Include information about the scene, objects, colors, and atmosphere. Return a complete description in {language_name}."
+  ja: "{language_name}でこの画像を詳しく説明してください。シーン、オブジェクト、色、雰囲気などの情報を含めてください。"
+  ko: "{language_name}로 이 이미지를 자세히 설명하세요. 장면, 객체, 색상 및 분위기에 대한 정보를 포함하세요."
+  es: "Describe esta imagen en detalle en {language_name}. Incluye información sobre la escena, objetos, colores y atmósfera."
+  fr: "Décrivez cette image en détail en {language_name}. Incluez des informations sur la scène, les objets, les couleurs et l'atmosphère."
+  de: "Beschreiben Sie dieses Bild detailliert in {language_name}. Fügen Sie Informationen über die Szene, Objekte, Farben und Atmosphäre hinzu."
+  ru: "Подробно опишите это изображение на {language_name}. Включите информацию о сцене, объектах, цветах и атмосфере."
+  default: "Describe this image in detail in {language_name}. Include information about the scene, objects, colors, and atmosphere. Return a complete description in {language_name}."
+
+# Language name mappings - 语言代码到自然语言名称的映射
+language_names:
+  en: "English"
+  zh: "Chinese"
+  ja: "Japanese"
+  ko: "Korean"
+  es: "Spanish"
+  fr: "French"
+  de: "German"
+  ru: "Russian"
