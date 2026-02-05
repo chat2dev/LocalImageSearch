@@ -24,8 +24,8 @@
 ### 2.1 克隆项目
 
 ```bash
-git clone <项目地址>
-cd project-scripts-tag
+git clone https://github.com/chat2dev/LocalImageSearch.git
+cd LocalImageSearch
 ```
 
 ### 2.2 安装 Python 依赖
@@ -197,7 +197,7 @@ pip uninstall -r doc/requirements.txt
 ### 6.2 删除项目
 
 ```bash
-rm -rf project-scripts-tag
+rm -rf LocalImageSearch
 ```
 
 ### 6.3 卸载 Ollama

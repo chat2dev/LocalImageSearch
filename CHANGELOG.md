@@ -18,7 +18,7 @@
 
 ### Migration
 Database copied from:
-- **Old**: `<project-scripts-tag>/data/image_tags.db`
+- **Old**: `<LocalImageSearch>/data/image_tags.db`
 - **New**: `~/.LocalImageSearch/data/image_tags.db`
 
 ---

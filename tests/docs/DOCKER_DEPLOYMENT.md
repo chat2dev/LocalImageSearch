@@ -206,7 +206,7 @@ docker-compose down
 docker-compose down -v
 
 # Remove images
-docker rmi $(docker images -q project-scripts-tag_app)
+docker rmi $(docker images -q localimagesearch_app)
 docker rmi ollama/ollama
 ```
 

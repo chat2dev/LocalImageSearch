@@ -112,7 +112,7 @@ Config:
 总文件数: 5
 成功处理: 5
 失败处理: 0
-数据库位置: /Users/user/project-scripts-tag/data/image_tags.db
+数据库位置: ~/.LocalImageSearch/data/image_tags.db
 ```
 
 ### 4.2 数据库存储
