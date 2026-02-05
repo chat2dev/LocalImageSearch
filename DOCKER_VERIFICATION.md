@@ -85,7 +85,7 @@
 
 #### Installation (as per README)
 ```bash
-git clone <repo-url>
+git clone https://github.com/chat2dev/LocalImageSearch.git
 cd LocalImageSearch
 uv sync
 ```

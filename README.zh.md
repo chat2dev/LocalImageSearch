@@ -35,8 +35,8 @@
 
 ```bash
 # 克隆仓库
-git clone <repo-url>
-cd project-scripts-tag
+git clone https://github.com/chat2dev/LocalImageSearch.git
+cd LocalImageSearch
 
 # 创建虚拟环境并安装依赖
 uv venv

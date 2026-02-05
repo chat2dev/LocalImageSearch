@@ -132,8 +132,8 @@ Edit `docker-compose.yml` to customize:
 ## Installation
 
 ```bash
-git clone <repo-url>
-cd project-scripts-tag
+git clone https://github.com/chat2dev/LocalImageSearch.git
+cd LocalImageSearch
 
 # Using uv (recommended)
 uv sync
