@@ -2,6 +2,7 @@
 Application configuration module
 """
 import os
+from pathlib import Path
 from typing import Optional
 from pydantic_settings import BaseSettings
 
@@ -11,13 +12,14 @@ class Settings(BaseSettings):
 
     # Database configuration
     # SQLite database file path for storing image annotation results
-    DATABASE_URL: str = "sqlite:///./data/image_tags.db"
+    _data_dir = Path.home() / ".LocalImageSearch" / "data"
+    DATABASE_URL: str = f"sqlite:///{_data_dir / 'image_tags.db'}"
 
     # FAISS index configuration
     # Directory for storing FAISS index files
-    FAISS_INDEX_DIR: str = "./data/faiss/indexes"
+    FAISS_INDEX_DIR: str = str(_data_dir / "faiss" / "indexes")
     # Directory for storing FAISS configuration and metadata
-    FAISS_CONFIG_DIR: str = "./data/faiss/config"
+    FAISS_CONFIG_DIR: str = str(_data_dir / "faiss" / "config")
     FAISS_INDEX_TYPE: str = "IVFPQ"
     FAISS_DIMENSION: int = 384  # Matches all-MiniLM-L6-v2 model output
     FAISS_NLIST: int = 100
@@ -51,6 +53,7 @@ settings = Settings()
 
 def ensure_directories():
     """Ensure required directories exist"""
-    os.makedirs(os.path.dirname(settings.DATABASE_URL.replace("sqlite:///", "")), exist_ok=True)
-    os.makedirs(settings.FAISS_INDEX_DIR, exist_ok=True)
-    os.makedirs(settings.FAISS_CONFIG_DIR, exist_ok=True)
+    data_dir = Path.home() / ".LocalImageSearch" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    Path(settings.FAISS_INDEX_DIR).mkdir(parents=True, exist_ok=True)
+    Path(settings.FAISS_CONFIG_DIR).mkdir(parents=True, exist_ok=True)
