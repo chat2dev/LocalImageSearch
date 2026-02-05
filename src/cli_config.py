@@ -57,6 +57,7 @@ class Config:
         self.language = os.getenv("LANGUAGE", "zh")
         self.reprocess = str_to_bool(os.getenv("REPROCESS", "false"))
         self.prompt_config_path = os.getenv("PROMPT_CONFIG", "")
+        self.max_workers = int(os.getenv("MAX_WORKERS", "5"))
 
     def parse_args(self):
         """Parse command line arguments
@@ -155,6 +156,12 @@ Example:
             default=None,
             help="Prompt config file path"
         )
+        parser.add_argument(
+            "--max-workers",
+            type=int,
+            default=None,
+            help=f"Maximum number of parallel workers (default from .env: {self.max_workers})"
+        )
 
         args = parser.parse_args()
 
@@ -184,6 +191,8 @@ Example:
             self.reprocess = args.reprocess
         if args.prompt_config is not None:
             self.prompt_config_path = args.prompt_config
+        if args.max_workers is not None:
+            self.max_workers = args.max_workers
 
     def load_config(self, config_path):
         """Load configuration file"""
@@ -203,6 +212,7 @@ Example:
                 self.db_path = config.get("db_path", self.db_path)
                 self.language = config.get("language", self.language)
                 self.prompt_config_path = config.get("prompt_config_path", self.prompt_config_path)
+                self.max_workers = config.get("max_workers", self.max_workers)
 
     def get_resize_dimensions(self):
         """Get resize dimensions"""
@@ -227,6 +237,7 @@ Example:
             f"  Tag Count: {self.tag_count}\n"
             f"  Generate Description: {self.generate_description}\n"
             f"  DB Path: {self.db_path}\n"
-            f"  Language: {self.language}"
+            f"  Language: {self.language}\n"
+            f"  Max Workers: {self.max_workers}"
         )
         return config_str

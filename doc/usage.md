@@ -48,6 +48,7 @@ python src/main.py --config config.yaml
 | --tag-count         | 标注关键字数量                | `10`                          | `10`                          |
 | --description       | 生成图片描述                  | -                             | `False`                       |
 | --db-path           | 数据库路径                    | `./data/tags.db`              | `./data/image_tags.db`        |
+| --max-workers       | 并行处理线程数                | `5`                           | `5`                           |
 | --config            | 配置文件路径                  | `config.yaml`                 | -                             |
 | --help              | 显示帮助信息                  | -                             | -                             |
 
@@ -170,7 +171,23 @@ sqlite3 -header -csv data/image_tags.db "SELECT * FROM image_tags;" > tags.csv
 
 ### 6.3 并发处理
 
-当前版本为单线程处理，未来版本将支持并发处理。
+系统支持并行处理，可通过 `--max-workers` 参数或环境变量 `MAX_WORKERS` 配置：
+
+```bash
+# 使用 5 个并行线程（默认）
+python src/main.py --image-path /path/to/images --max-workers 5
+
+# 使用 10 个并行线程（加快处理速度）
+python src/main.py --image-path /path/to/images --max-workers 10
+
+# 禁用并行处理（串行模式）
+python src/main.py --image-path /path/to/images --max-workers 1
+```
+
+**注意事项：**
+- 增加并行度可以加快处理速度，但也会增加 CPU 和内存使用
+- 建议根据系统资源和模型性能调整并行度
+- 对于资源有限的系统，建议使用较小的 `max-workers` 值（如 2-3）
 
 ## 7. 高级功能
 

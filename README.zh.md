@@ -70,6 +70,7 @@ TAG_COUNT=10
 # 图片处理
 IMAGE_RESIZE=512x512
 GENERATE_DESCRIPTION=false
+MAX_WORKERS=5  # 并行处理线程数（1=串行，5=默认）
 
 # OpenAI 兼容 API 配置
 # API_BASE=http://localhost:8000/v1

@@ -198,6 +198,7 @@ TAG_COUNT=10
 # Image processing
 IMAGE_RESIZE=512x512
 GENERATE_DESCRIPTION=false
+MAX_WORKERS=5  # Parallel processing workers (1=serial, 5=default)
 
 # For OpenAI-compatible APIs
 # API_BASE=http://localhost:8000/v1

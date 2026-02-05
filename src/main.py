@@ -5,10 +5,45 @@ Image auto-tagging system main entry point
 import sys
 from pathlib import Path
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.cli_config import Config
 from src.utils import get_image_files
 from src.tagging import process_image
 from src.db_manager import Database
+
+
+def process_single_image(image_path, config, resize_width, resize_height, db):
+    """Process a single image
+
+    Args:
+        image_path: Path to the image file
+        config: Configuration object
+        resize_width: Target width for image resize
+        resize_height: Target height for image resize
+        db: Database instance
+
+    Returns:
+        tuple: (image_path, success: bool, error: str or None)
+    """
+    try:
+        success = process_image(
+            image_path=image_path,
+            model_name=config.model,
+            resize_width=resize_width,
+            resize_height=resize_height,
+            tag_count=config.tag_count,
+            generate_description=config.generate_description,
+            db=db,
+            language=config.language,
+            model_type=config.model_type,
+            api_base=config.api_base,
+            api_key=config.api_key,
+            force_reprocess=config.reprocess,
+            prompt_config_path=config.prompt_config_path
+        )
+        return (image_path, success, None)
+    except Exception as e:
+        return (image_path, False, str(e))
 
 
 def main():
@@ -37,35 +72,51 @@ def main():
     # Initialize database
     db = Database(config.db_path)
 
-    # Process images
+    # Process images with parallel workers
     processed_count = 0
     failed_count = 0
 
-    with tqdm(total=len(image_files), desc="Processing", unit="img") as pbar:
-        for image_path in image_files:
-            try:
-                if process_image(
-                    image_path=image_path,
-                    model_name=config.model,
-                    resize_width=resize_width,
-                    resize_height=resize_height,
-                    tag_count=config.tag_count,
-                    generate_description=config.generate_description,
-                    db=db,
-                    language=config.language,
-                    model_type=config.model_type,
-                    api_base=config.api_base,
-                    api_key=config.api_key,
-                    force_reprocess=config.reprocess,
-                    prompt_config_path=config.prompt_config_path
-                ):
+    if config.max_workers == 1:
+        # Serial processing (no parallelism)
+        with tqdm(total=len(image_files), desc="Processing", unit="img") as pbar:
+            for image_path in image_files:
+                _, success, error = process_single_image(
+                    image_path, config, resize_width, resize_height, db
+                )
+                if success:
                     processed_count += 1
                 else:
                     failed_count += 1
-            except Exception as e:
-                print(f"Error processing {image_path}: {e}")
-                failed_count += 1
-            pbar.update(1)
+                    if error:
+                        print(f"\nError processing {image_path}: {error}")
+                pbar.update(1)
+    else:
+        # Parallel processing
+        with ThreadPoolExecutor(max_workers=config.max_workers) as executor:
+            # Submit all tasks
+            future_to_image = {
+                executor.submit(
+                    process_single_image,
+                    image_path,
+                    config,
+                    resize_width,
+                    resize_height,
+                    db
+                ): image_path
+                for image_path in image_files
+            }
+
+            # Process completed tasks with progress bar
+            with tqdm(total=len(image_files), desc="Processing", unit="img") as pbar:
+                for future in as_completed(future_to_image):
+                    image_path, success, error = future.result()
+                    if success:
+                        processed_count += 1
+                    else:
+                        failed_count += 1
+                        if error:
+                            print(f"\nError processing {image_path}: {error}")
+                    pbar.update(1)
 
     db.close()
 
