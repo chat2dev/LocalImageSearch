@@ -226,11 +226,23 @@ Configure `MAX_WORKERS` based on your system memory:
 | 32GB         | 5-10                    | Can handle higher parallelism |
 | 64GB+        | 10-20                   | Maximum performance for large batches |
 
+**Performance Expectations:**
+- **Small batches (<20 images)**: 10-20% speedup with parallel processing
+- **Large batches (>100 images)**: More noticeable improvement
+- **Bottleneck**: Waiting for Ollama API responses (I/O bound)
+- **Limitation**: Ollama may serialize requests internally, limiting parallel gains
+
+**Benchmark (5 test images):**
+- Serial (1 worker): 22.8s
+- Parallel (3 workers): 20.8s (9% faster)
+- Parallel (5 workers): 19.4s (15% faster)
+
 **Considerations:**
 - Each worker loads the model into memory
 - Vision-language models typically use 2-4GB per worker
 - Monitor system resources (RAM, CPU) during processing
 - Reduce `MAX_WORKERS` if you experience out-of-memory errors
+- For small batches, serial processing may be sufficient
 
 ---
 
