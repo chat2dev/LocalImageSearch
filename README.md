@@ -170,6 +170,49 @@ npm install
 cd ..
 ```
 
+### 5. Configuration (Optional)
+
+Create a `.env` file to set default values for common options:
+
+```bash
+# Copy the example configuration
+cp .env.example .env
+
+# Edit .env with your preferred settings
+nano .env
+```
+
+**Configuration Priority:**
+1. **CLI arguments** (highest) - Override everything
+2. **.env file** - Default values for repeated use
+3. **Built-in defaults** (lowest)
+
+**Example .env file:**
+```bash
+# Model configuration
+MODEL_NAME=qwen3-vl:4b
+MODEL_TYPE=ollama
+LANGUAGE=zh
+TAG_COUNT=10
+
+# Image processing
+IMAGE_RESIZE=512x512
+GENERATE_DESCRIPTION=false
+
+# For OpenAI-compatible APIs
+# API_BASE=http://localhost:8000/v1
+# API_KEY=your-api-key
+```
+
+With a `.env` file, you can run commands without repeating options:
+```bash
+# .env values will be used automatically
+uv run python src/main.py --image-path ~/Pictures
+
+# CLI arguments override .env values
+uv run python src/main.py --image-path ~/Pictures --language en --tag-count 20
+```
+
 ---
 
 ## Quick Start

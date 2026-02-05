@@ -39,9 +39,50 @@ git clone https://github.com/chat2dev/LocalImageSearch.git
 cd LocalImageSearch
 
 # 创建虚拟环境并安装依赖
-uv venv
-source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
+```
+
+### 配置（可选）
+
+创建 `.env` 文件来设置常用选项的默认值：
+
+```bash
+# 复制示例配置文件
+cp .env.example .env
+
+# 编辑 .env 文件设置你的偏好
+nano .env
+```
+
+**配置优先级：**
+1. **CLI 参数**（最高）- 覆盖所有配置
+2. **.env 文件** - 重复使用的默认值
+3. **内置默认值**（最低）
+
+**示例 .env 文件：**
+```bash
+# 模型配置
+MODEL_NAME=qwen3-vl:4b
+MODEL_TYPE=ollama
+LANGUAGE=zh
+TAG_COUNT=10
+
+# 图片处理
+IMAGE_RESIZE=512x512
+GENERATE_DESCRIPTION=false
+
+# OpenAI 兼容 API 配置
+# API_BASE=http://localhost:8000/v1
+# API_KEY=your-api-key
+```
+
+有了 `.env` 文件，运行命令时无需重复指定选项：
+```bash
+# 自动使用 .env 中的值
+uv run python src/main.py --image-path ~/Pictures
+
+# CLI 参数会覆盖 .env 中的值
+uv run python src/main.py --image-path ~/Pictures --language en --tag-count 20
 ```
 
 ---
