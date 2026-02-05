@@ -4,10 +4,10 @@
 # System prompts - 用于设定模型角色
 system_prompts:
   zh: "你是专业的图片标签生成器。你的任务是分析图片并生成准确、有价值的标签词汇。标签必须是名词性词组,每个标签至少2个字。只输出标签,不要其他内容。"
-  en: "You are a professional image tagging system. Your task is to analyze images and generate accurate, valuable tags. Output ONLY the comma-separated tags. Do NOT include any explanations, reasoning, or additional text."
+  en: "You generate {tag_count} comma-separated image tags."
   ja: "あなたは画像タグ生成AIです。カンマ区切りのタグのみを出力してください。"
   ko: "당신은 이미지 태그 생성 AI입니다. 쉼표로 구분된 태그만 출력하세요."
-  default: "You are a professional image tagging system. Your task is to analyze images and generate accurate, valuable tags. Output ONLY the comma-separated tags. Do NOT include any explanations, reasoning, or additional text."
+  default: "You generate {tag_count} comma-separated image tags."
 
 # Tag generation prompts - 用于生成标签
 tag_prompts:
@@ -25,19 +25,9 @@ tag_prompts:
 
     标签：
   en: |
-    Generate {tag_count} {language_name} tags for this image. Requirements:
-    1. Use noun phrases (e.g., product packaging, nutrition label, city scenery)
-    2. Cover multiple dimensions:
-       - Image type (e.g., product photo, screenshot, promotional poster)
-       - Object recognition (e.g., pet cat, electronic device, food packaging)
-       - Text content (if any text visible, extract key terms)
-       - Scene/location (e.g., indoor environment, outdoor landscape)
-       - Visual style (e.g., flat design, realistic photography)
-    3. Output format: comma-separated tags ONLY
-    4. DO NOT include explanations, numbering, or reasoning process
-    5. Start output immediately with the first tag
+    {tag_count} comma-separated tags:
 
-    Tags:
+
   ja: |
     この画像について{tag_count}個の{language_name}タグを生成してください。要件:
     1. 名詞または名詞句を使用（例：商品パッケージ、栄養成分表、都市風景）
@@ -123,19 +113,9 @@ tag_prompts:
 
     Теги:
   default: |
-    Generate {tag_count} {language_name} tags for this image. Requirements:
-    1. Use noun phrases (e.g., product packaging, nutrition label, city scenery)
-    2. Cover multiple dimensions:
-       - Image type (e.g., product photo, screenshot, promotional poster)
-       - Object recognition (e.g., pet cat, electronic device, food packaging)
-       - Text content (if any text visible, extract key terms)
-       - Scene/location (e.g., indoor environment, outdoor landscape)
-       - Visual style (e.g., flat design, realistic photography)
-    3. Output format: comma-separated tags ONLY
-    4. DO NOT include explanations, numbering, or reasoning process
-    5. Start output immediately with the first tag
+    {tag_count} comma-separated tags:
 
-    Tags:
+
 
 # Description generation prompts - 用于生成描述
 description_prompts:

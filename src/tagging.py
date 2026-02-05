@@ -182,11 +182,49 @@ def parse_tags(tag_text: str, expected_count: int) -> List[str]:
     # 移除多余字符
     tag_text = tag_text.strip()
 
+    # 检测推理关键词（说明模型输出了推理过程而不是纯标签）
+    reasoning_keywords = [
+        "okay", "let's", "first", "i need", "the user",
+        "looking at", "appears to be", "seems to", "probably",
+        "i think", "maybe", "might be", "could be", "let me",
+        "analyze", "tackle this", "provided an image", "want"
+    ]
+
+    has_reasoning = any(keyword in tag_text.lower() for keyword in reasoning_keywords)
+
+    if has_reasoning:
+        # 尝试从推理文本中提取实际标签
+        # 通常标签在句子末尾，或在某些触发词之后
+
+        # 方法1：查找最后一行中的逗号分隔内容
+        lines = tag_text.strip().split('\n')
+        for line in reversed(lines):
+            if ',' in line and len(line) < 300:  # 标签行通常较短
+                # 检查这行是否像标签行（包含多个逗号，没有句子结构）
+                comma_count = line.count(',')
+                if comma_count >= 2 and not any(kw in line.lower() for kw in reasoning_keywords[:5]):
+                    tag_text = line.strip()
+                    break
+
+        # 方法2：查找引号中的内容或冒号后的内容
+        import re
+        # 匹配 "Tags:" 或 "tags:" 后的内容
+        match = re.search(r'tags?:\s*(.+?)(?:\n|$)', tag_text, re.IGNORECASE)
+        if match:
+            tag_text = match.group(1).strip()
+        elif '"' in tag_text:
+            # 尝试提取引号中的内容
+            quoted = re.findall(r'"([^"]+)"', tag_text)
+            if quoted:
+                tag_text = ', '.join(quoted)
+
     # 使用多种分隔符分割
-    separators = [",", "，", "、", ";", "；", " "]
+    separators = [",", "，", "、", ";", "；"]
     for sep in separators:
         if sep in tag_text:
             tags = [t.strip() for t in tag_text.split(sep) if t.strip()]
+            # 过滤掉过长的"标签"（可能是句子）
+            tags = [t for t in tags if len(t) < 100]
             if tags:
                 return tags[:expected_count]
 
@@ -194,7 +232,9 @@ def parse_tags(tag_text: str, expected_count: int) -> List[str]:
     if len(tag_text) > 0:
         if " " in tag_text:
             tags = tag_text.split()
-            return [t.strip() for t in tags if t.strip()][:expected_count]
-        return [tag_text][:expected_count]
+            tags = [t.strip() for t in tags if t.strip() and len(t) < 100]
+            return tags[:expected_count]
+        if len(tag_text) < 100:
+            return [tag_text][:expected_count]
 
     return []
