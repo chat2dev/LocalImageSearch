@@ -88,6 +88,7 @@ def run_tagging_test(image_path: Path, language: str) -> dict:
         "--image-path", str(image_path),
         "--language", language,
         "--tag-count", "10",
+        "--max-workers", "1",  # Use serial processing for tests
         "--reprocess"
     ]
 

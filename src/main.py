@@ -12,7 +12,7 @@ from src.tagging import process_image
 from src.db_manager import Database
 
 
-def process_single_image(image_path, config, resize_width, resize_height, db):
+def process_single_image(image_path, config, resize_width, resize_height, db_path):
     """Process a single image
 
     Args:
@@ -20,11 +20,14 @@ def process_single_image(image_path, config, resize_width, resize_height, db):
         config: Configuration object
         resize_width: Target width for image resize
         resize_height: Target height for image resize
-        db: Database instance
+        db_path: Path to database file (each thread creates its own connection)
 
     Returns:
         tuple: (image_path, success: bool, error: str or None)
     """
+    # Each thread must create its own database connection
+    # SQLite connections cannot be shared across threads
+    db = Database(db_path)
     try:
         success = process_image(
             image_path=image_path,
@@ -44,6 +47,9 @@ def process_single_image(image_path, config, resize_width, resize_height, db):
         return (image_path, success, None)
     except Exception as e:
         return (image_path, False, str(e))
+    finally:
+        # Always close the database connection
+        db.close()
 
 
 def main():
@@ -69,10 +75,9 @@ def main():
     # Parse resize dimensions
     resize_width, resize_height = config.get_resize_dimensions()
 
-    # Initialize database
-    db = Database(config.db_path)
-
     # Process images with parallel workers
+    # Note: Each worker thread will create its own database connection
+    # to avoid SQLite threading issues
     processed_count = 0
     failed_count = 0
 
@@ -81,7 +86,7 @@ def main():
         with tqdm(total=len(image_files), desc="Processing", unit="img") as pbar:
             for image_path in image_files:
                 _, success, error = process_single_image(
-                    image_path, config, resize_width, resize_height, db
+                    image_path, config, resize_width, resize_height, config.db_path
                 )
                 if success:
                     processed_count += 1
@@ -101,7 +106,7 @@ def main():
                     config,
                     resize_width,
                     resize_height,
-                    db
+                    config.db_path  # Pass db_path, not db object
                 ): image_path
                 for image_path in image_files
             }
@@ -117,8 +122,6 @@ def main():
                         if error:
                             print(f"\nError processing {image_path}: {error}")
                     pbar.update(1)
-
-    db.close()
 
     # Build index (inverted index + FTS5 full-text search)
     from src.index_builder import IndexBuilder
