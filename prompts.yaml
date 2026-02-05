@@ -4,10 +4,10 @@
 # System prompts - 用于设定模型角色
 system_prompts:
   zh: "你是专业的图片标签生成器。你的任务是分析图片并生成准确、有价值的标签词汇。标签必须是名词性词组,每个标签至少2个字。只输出标签,不要其他内容。"
-  en: "You are a vision AI that generates ONLY comma-separated tags."
+  en: "You are a professional image tagging system. Your task is to analyze images and generate accurate, valuable tags. Output ONLY the comma-separated tags. Do NOT include any explanations, reasoning, or additional text."
   ja: "あなたは画像タグ生成AIです。カンマ区切りのタグのみを出力してください。"
   ko: "당신은 이미지 태그 생성 AI입니다. 쉼표로 구분된 태그만 출력하세요."
-  default: "You are a vision AI that generates ONLY comma-separated tags."
+  default: "You are a professional image tagging system. Your task is to analyze images and generate accurate, valuable tags. Output ONLY the comma-separated tags. Do NOT include any explanations, reasoning, or additional text."
 
 # Tag generation prompts - 用于生成标签
 tag_prompts:
@@ -24,14 +24,118 @@ tag_prompts:
     4. 用逗号分隔，不要编号，不要解释
 
     标签：
-  en: "List {tag_count} tags for this image, comma-separated, in {language_name}. Output only the tags, nothing else.\nTags: "
-  ja: "この画像について{tag_count}個の{language_name}タグをカンマ区切りで生成してください。タグのみを出力してください。\nタグ："
-  ko: "이 이미지에 대해 {tag_count}개의 {language_name} 태그를 쉼표로 구분하여 생성하세요. 태그만 출력하세요.\n태그: "
-  es: "Enumera {tag_count} etiquetas para esta imagen, separadas por comas, en {language_name}. Solo genera las etiquetas.\nEtiquetas: "
-  fr: "Listez {tag_count} balises pour cette image, séparées par des virgules, en {language_name}. Ne générez que les balises.\nBalises: "
-  de: "Listen Sie {tag_count} Tags für dieses Bild auf, durch Kommas getrennt, in {language_name}. Geben Sie nur die Tags aus.\nTags: "
-  ru: "Перечислите {tag_count} тегов для этого изображения через запятую на {language_name}. Выведите только теги.\nТеги: "
-  default: "List {tag_count} tags for this image, comma-separated, in {language_name}. Output only the tags, nothing else.\nTags: "
+  en: |
+    Generate {tag_count} {language_name} tags for this image. Requirements:
+    1. Use noun phrases (e.g., product packaging, nutrition label, city scenery)
+    2. Cover multiple dimensions:
+       - Image type (e.g., product photo, screenshot, promotional poster)
+       - Object recognition (e.g., pet cat, electronic device, food packaging)
+       - Text content (if any text visible, extract key terms)
+       - Scene/location (e.g., indoor environment, outdoor landscape)
+       - Visual style (e.g., flat design, realistic photography)
+    3. Output format: comma-separated tags ONLY
+    4. DO NOT include explanations, numbering, or reasoning process
+    5. Start output immediately with the first tag
+
+    Tags:
+  ja: |
+    この画像について{tag_count}個の{language_name}タグを生成してください。要件:
+    1. 名詞または名詞句を使用（例：商品パッケージ、栄養成分表、都市風景）
+    2. 複数の次元をカバー:
+       - 画像タイプ（例：商品写真、スクリーンショット、宣伝ポスター）
+       - オブジェクト認識（例：ペット猫、電子機器、食品パッケージ）
+       - テキスト内容（テキストが見える場合、重要な用語を抽出）
+       - シーン/場所（例：室内環境、屋外風景）
+       - ビジュアルスタイル（例：フラットデザイン、写実的写真）
+    3. カンマ区切りのタグのみを出力
+    4. 説明、番号付け、推論プロセスを含めない
+    5. 最初のタグから直接出力を開始
+
+    タグ:
+  ko: |
+    이 이미지에 대해 {tag_count}개의 {language_name} 태그를 생성하세요. 요구사항:
+    1. 명사 구문 사용 (예: 제품 포장, 영양 정보표, 도시 풍경)
+    2. 여러 차원 포함:
+       - 이미지 유형 (예: 제품 사진, 스크린샷, 홍보 포스터)
+       - 객체 인식 (예: 반려묘, 전자기기, 식품 포장)
+       - 텍스트 내용 (텍스트가 보이면 핵심 용어 추출)
+       - 장면/위치 (예: 실내 환경, 야외 풍경)
+       - 시각적 스타일 (예: 플랫 디자인, 사실적 사진)
+    3. 쉼표로 구분된 태그만 출력
+    4. 설명, 번호, 추론 과정 포함하지 않음
+    5. 첫 번째 태그부터 즉시 출력 시작
+
+    태그:
+  es: |
+    Genera {tag_count} etiquetas en {language_name} para esta imagen. Requisitos:
+    1. Usa frases nominales (ej: empaque de producto, etiqueta nutricional, paisaje urbano)
+    2. Cubre múltiples dimensiones:
+       - Tipo de imagen (ej: foto de producto, captura de pantalla, póster promocional)
+       - Reconocimiento de objetos (ej: gato mascota, dispositivo electrónico, empaque de alimentos)
+       - Contenido de texto (si hay texto visible, extrae términos clave)
+       - Escena/ubicación (ej: ambiente interior, paisaje exterior)
+       - Estilo visual (ej: diseño plano, fotografía realista)
+    3. Formato: solo etiquetas separadas por comas
+    4. NO incluyas explicaciones, numeración o proceso de razonamiento
+    5. Comienza la salida inmediatamente con la primera etiqueta
+
+    Etiquetas:
+  fr: |
+    Générez {tag_count} balises en {language_name} pour cette image. Exigences:
+    1. Utilisez des syntagmes nominaux (ex: emballage de produit, étiquette nutritionnelle, paysage urbain)
+    2. Couvrez plusieurs dimensions:
+       - Type d'image (ex: photo de produit, capture d'écran, affiche promotionnelle)
+       - Reconnaissance d'objets (ex: chat domestique, appareil électronique, emballage alimentaire)
+       - Contenu textuel (si du texte est visible, extraire les termes clés)
+       - Scène/lieu (ex: environnement intérieur, paysage extérieur)
+       - Style visuel (ex: design plat, photographie réaliste)
+    3. Format: balises séparées par des virgules uniquement
+    4. N'incluez PAS d'explications, de numérotation ou de processus de raisonnement
+    5. Commencez immédiatement avec la première balise
+
+    Balises:
+  de: |
+    Generieren Sie {tag_count} {language_name} Tags für dieses Bild. Anforderungen:
+    1. Verwenden Sie Nominalphrasen (z.B.: Produktverpackung, Nährwertkennzeichnung, Stadtlandschaft)
+    2. Decken Sie mehrere Dimensionen ab:
+       - Bildtyp (z.B.: Produktfoto, Screenshot, Werbeposter)
+       - Objekterkennung (z.B.: Hauskatze, elektronisches Gerät, Lebensmittelverpackung)
+       - Textinhalt (falls Text sichtbar ist, extrahieren Sie Schlüsselbegriffe)
+       - Szene/Ort (z.B.: Innenumgebung, Außenlandschaft)
+       - Visueller Stil (z.B.: flaches Design, realistische Fotografie)
+    3. Format: nur durch Kommas getrennte Tags
+    4. Fügen Sie KEINE Erklärungen, Nummerierungen oder Denkprozesse hinzu
+    5. Beginnen Sie die Ausgabe sofort mit dem ersten Tag
+
+    Tags:
+  ru: |
+    Создайте {tag_count} тегов на {language_name} для этого изображения. Требования:
+    1. Используйте именные фразы (например: упаковка продукта, этикетка пищевой ценности, городской пейзаж)
+    2. Охватите несколько измерений:
+       - Тип изображения (например: фото продукта, скриншот, рекламный постер)
+       - Распознавание объектов (например: домашняя кошка, электронное устройство, пищевая упаковка)
+       - Текстовое содержимое (если виден текст, извлеките ключевые термины)
+       - Сцена/местоположение (например: внутренняя среда, внешний пейзаж)
+       - Визуальный стиль (например: плоский дизайн, реалистичная фотография)
+    3. Формат: только теги, разделенные запятыми
+    4. НЕ включайте объяснения, нумерацию или процесс рассуждения
+    5. Начните вывод сразу с первого тега
+
+    Теги:
+  default: |
+    Generate {tag_count} {language_name} tags for this image. Requirements:
+    1. Use noun phrases (e.g., product packaging, nutrition label, city scenery)
+    2. Cover multiple dimensions:
+       - Image type (e.g., product photo, screenshot, promotional poster)
+       - Object recognition (e.g., pet cat, electronic device, food packaging)
+       - Text content (if any text visible, extract key terms)
+       - Scene/location (e.g., indoor environment, outdoor landscape)
+       - Visual style (e.g., flat design, realistic photography)
+    3. Output format: comma-separated tags ONLY
+    4. DO NOT include explanations, numbering, or reasoning process
+    5. Start output immediately with the first tag
+
+    Tags:
 
 # Description generation prompts - 用于生成描述
 description_prompts:
