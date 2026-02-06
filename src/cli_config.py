@@ -58,6 +58,7 @@ class Config:
         self.reprocess = str_to_bool(os.getenv("REPROCESS", "false"))
         self.prompt_config_path = os.getenv("PROMPT_CONFIG", "")
         self.max_workers = int(os.getenv("MAX_WORKERS", "5"))
+        self.batch_size = int(os.getenv("BATCH_SIZE", "100"))
 
     def parse_args(self):
         """Parse command line arguments
@@ -162,6 +163,12 @@ Example:
             default=None,
             help=f"Maximum number of parallel workers (default from .env: {self.max_workers})"
         )
+        parser.add_argument(
+            "--batch-size",
+            type=int,
+            default=None,
+            help=f"Maximum number of images to process per run, excluding already processed images (default from .env: {self.batch_size})"
+        )
 
         args = parser.parse_args()
 
@@ -193,6 +200,8 @@ Example:
             self.prompt_config_path = args.prompt_config
         if args.max_workers is not None:
             self.max_workers = args.max_workers
+        if args.batch_size is not None:
+            self.batch_size = args.batch_size
 
     def load_config(self, config_path):
         """Load configuration file"""
@@ -238,6 +247,8 @@ Example:
             f"  Generate Description: {self.generate_description}\n"
             f"  DB Path: {self.db_path}\n"
             f"  Language: {self.language}\n"
-            f"  Max Workers: {self.max_workers}"
+            f"  Reprocess: {self.reprocess}\n"
+            f"  Max Workers: {self.max_workers}\n"
+            f"  Batch Size: {self.batch_size}"
         )
         return config_str

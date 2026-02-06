@@ -308,12 +308,14 @@ uv run python src/main.py --image-path ./images \
 | `--model-path` | — | 本地模型路径 (local 模式) |
 | `--api-base` | — | API 地址 (openai 模式) |
 | `--api-key` | — | API 密钥 (openai 模式) |
-| `--language` | `en` | 标签语言 |
+| `--language` | `zh` | 标签语言 (zh/en/ja/ko/es/fr/de/ru) |
 | `--tag-count` | `10` | 生成标签数量 |
 | `--resize` | `512x512` | 图片缩放尺寸 |
 | `--description` | `false` | 开启描述生成 |
 | `--db-path` | `./data/image_tags.db` | 数据库路径 |
-| `--reprocess` | `false` | 强制重处理已有记录 |
+| `--reprocess` | `false` | 强制重新处理已标注图片 |
+| `--max-workers` | `5` | 并行处理线程数（1=串行） |
+| `--batch-size` | `100` | 每次运行处理的最大图片数（不含已处理） |
 | `--prompt-config` | `prompts.yaml` | 自定义 Prompt 配置文件 |
 
 ### YAML 配置文件

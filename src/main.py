@@ -64,12 +64,48 @@ def main():
     print("=" * 60)
 
     # Get image files
-    image_files = get_image_files(config.image_path)
-    if not image_files:
+    all_image_files = get_image_files(config.image_path)
+    if not all_image_files:
         print("No image files found")
         sys.exit(1)
 
-    print(f"Found {len(image_files)} image files")
+    print(f"Found {len(all_image_files)} image files")
+
+    # Filter out already processed images if not in reprocess mode
+    if not config.reprocess:
+        from src.utils import generate_unique_id
+        db = Database(config.db_path)
+
+        unprocessed_files = []
+        for image_file in all_image_files:
+            image_id = generate_unique_id(image_file)
+            existing_tags = db.get_tags_by_image_id(image_id)
+            if not existing_tags:
+                unprocessed_files.append(image_file)
+
+        db.close()
+
+        processed_count_before = len(all_image_files) - len(unprocessed_files)
+        print(f"  Already processed: {processed_count_before}")
+        print(f"  To process: {len(unprocessed_files)}")
+
+        image_files = unprocessed_files
+    else:
+        print(f"  Reprocess mode: will process all images")
+        image_files = all_image_files
+
+    # Apply batch size limit (only to images that will be processed)
+    if len(image_files) > config.batch_size:
+        print(f"\nBatch size limit: processing first {config.batch_size} images")
+        print(f"  Remaining: {len(image_files) - config.batch_size} images")
+        print(f"  Tip: Run again to process the next batch")
+        image_files = image_files[:config.batch_size]
+
+    if not image_files:
+        print("\nAll images already processed. Use --reprocess to force reprocess.")
+        sys.exit(0)
+
+    print(f"\nWill process: {len(image_files)} images")
     print()
 
     # Parse resize dimensions
@@ -138,7 +174,8 @@ def main():
     print("=" * 60)
     print("Processing complete")
     print("=" * 60)
-    print(f"Total files: {len(image_files)}")
+    print(f"Total files found: {len(all_image_files)}")
+    print(f"Files in this batch: {len(image_files)}")
     print(f"Successfully processed: {processed_count}")
     print(f"Failed: {failed_count}")
     print(f"Database location: {Path(config.db_path).resolve()}")

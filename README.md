@@ -316,6 +316,12 @@ uv run python src/main.py --image-path /path/to/image.jpg --model qwen3-vl:4b --
 # Tag an entire directory and generate descriptions
 uv run python src/main.py --image-path /path/to/images/ --model qwen3-vl:4b --language zh --description
 
+# Process large collections in batches (100 images at a time, default)
+uv run python src/main.py --image-path /path/to/large-collection/ --batch-size 100
+
+# Force reprocess already tagged images
+uv run python src/main.py --image-path /path/to/images/ --reprocess
+
 # Search the results
 uv run python src/index_builder.py search "人工智能" --mode tag
 ```
@@ -511,6 +517,8 @@ Set the tag and description language via `--language`:
 | `--description` | `false` | Enable description generation |
 | `--db-path` | `./data/image_tags.db` | Database path |
 | `--reprocess` | `false` | Force re-process already tagged images |
+| `--max-workers` | `5` | Number of parallel workers (1=serial) |
+| `--batch-size` | `100` | Max images to process per run (excludes already processed) |
 | `--prompt-config` | `prompts.yaml` | Custom prompt config file |
 
 ### YAML Configuration
