@@ -200,6 +200,7 @@ TAG_COUNT=10
 IMAGE_RESIZE=512x512
 GENERATE_DESCRIPTION=false
 MAX_WORKERS=5  # Parallel processing workers (1=serial, 5=default)
+BATCH_SIZE=100  # Max images per run, excluding already processed (0=unlimited)
 
 # Database paths (supports environment variables)
 DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db

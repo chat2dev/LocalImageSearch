@@ -72,6 +72,7 @@ TAG_COUNT=10
 IMAGE_RESIZE=512x512
 GENERATE_DESCRIPTION=false
 MAX_WORKERS=5  # 并行处理线程数（1=串行，5=默认）
+BATCH_SIZE=100  # 每次最多处理图片数，不含已处理（0=不限制）
 
 # 数据库路径（支持环境变量引用）
 DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
