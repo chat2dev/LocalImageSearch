@@ -201,10 +201,27 @@ IMAGE_RESIZE=512x512
 GENERATE_DESCRIPTION=false
 MAX_WORKERS=5  # Parallel processing workers (1=serial, 5=default)
 
+# Database paths (supports environment variables)
+DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
+
 # For OpenAI-compatible APIs
 # API_BASE=http://localhost:8000/v1
 # API_KEY=your-api-key
 ```
+
+**Environment Variable Expansion:**
+
+The `.env` file supports referencing system environment variables using `${VAR}` syntax:
+```bash
+# Use ${HOME} for user home directory
+DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
+FAISS_INDEX_DIR=${HOME}/.LocalImageSearch/faiss
+
+# Other environment variables work too
+CUSTOM_PATH=${HOME}/Documents/images
+```
+
+Note: Use `${VAR}` syntax (with braces), not `$VAR`.
 
 With a `.env` file, you can run commands without repeating options:
 ```bash
@@ -291,6 +308,7 @@ This creates the database at `~/.LocalImageSearch/data/image_tags.db` with all n
 
 Tag images and search from the command line:
 
+**Using Ollama (default):**
 ```bash
 # Tag a single image with 10 Chinese tags
 uv run python src/main.py --image-path /path/to/image.jpg --model qwen3-vl:4b --language zh
@@ -302,7 +320,26 @@ uv run python src/main.py --image-path /path/to/images/ --model qwen3-vl:4b --la
 uv run python src/index_builder.py search "人工智能" --mode tag
 ```
 
-Tags are saved to `data/image_tags.db` and indexes are built automatically on completion.
+**Using Doubao (豆包):**
+```bash
+# Configure Doubao environment variables (one-time setup)
+export DOUBAO_API_KEY="your-doubao-api-key"
+export DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
+export DOUBAO_MODEL_NAME="ep-xxxxxxxxxxxxx-xxxxx"
+
+# Tag images with Doubao
+uv run python src/main.py \
+  --image-path /path/to/images/ \
+  --model-type openai \
+  --model "$DOUBAO_MODEL_NAME" \
+  --api-base "$DOUBAO_BASE_URL" \
+  --api-key "$DOUBAO_API_KEY" \
+  --language zh
+```
+
+Tags are saved to `~/.LocalImageSearch/data/image_tags.db` and indexes are built automatically on completion.
+
+> **Testing Doubao**: See `tests/README_DOUBAO.md` for detailed testing guide and troubleshooting.
 
 ### Option 2: Web UI (Recommended)
 
@@ -380,19 +417,72 @@ This system uses an **optimized multi-dimensional tagging strategy** specificall
 | Type | `--model-type` | Description |
 |------|----------------|-------------|
 | Ollama | `ollama` (default) | Local Ollama service on port 11434 |
-| OpenAI-compatible | `openai` | vLLM, cloud provider APIs, etc. |
+| OpenAI-compatible | `openai` | vLLM, Doubao (豆包), OpenAI, Together AI, etc. |
+
+#### Using Ollama (Default)
 
 ```bash
-# Ollama (default, recommended)
-uv run python src/main.py --image-path ./images --model qwen3-vl:4b
+# Ollama with default model
+uv run python src/main.py --image-path ./images
 
-# OpenAI-compatible API
-uv run python src/main.py --image-path ./images \
-  --model qwen-vl-chat \
-  --model-type openai \
-  --api-base http://localhost:8000/v1 \
-  --api-key your-key
+# Ollama with specific model
+uv run python src/main.py --image-path ./images --model qwen3-vl:4b
 ```
+
+#### Using OpenAI-Compatible APIs
+
+**Generic OpenAI-Compatible API:**
+```bash
+uv run python src/main.py --image-path ./images \
+  --model-type openai \
+  --model your-model-name \
+  --api-base http://localhost:8000/v1 \
+  --api-key your-api-key
+```
+
+**Doubao (豆包) API:**
+
+Doubao uses a slightly different URL structure where the base URL already includes the version (`/api/v3`):
+
+```bash
+# Step 1: Set environment variables (recommended)
+export DOUBAO_API_KEY="your-doubao-api-key"
+export DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
+export DOUBAO_MODEL_NAME="ep-xxxxxxxxxxxxx-xxxxx"
+
+# Step 2: Run with Doubao
+uv run python src/main.py --image-path ./images \
+  --model-type openai \
+  --model "$DOUBAO_MODEL_NAME" \
+  --api-base "$DOUBAO_BASE_URL" \
+  --api-key "$DOUBAO_API_KEY" \
+  --language zh
+```
+
+**Using .env file with Doubao:**
+```bash
+# Create .env file
+cat > .env << 'EOF'
+MODEL_TYPE=openai
+MODEL_NAME=${DOUBAO_MODEL_NAME}
+API_BASE=${DOUBAO_BASE_URL}
+API_KEY=${DOUBAO_API_KEY}
+LANGUAGE=zh
+TAG_COUNT=10
+MAX_WORKERS=5
+EOF
+
+# Run (will use environment variables)
+uv run python src/main.py --image-path ./images
+```
+
+**Important Notes for OpenAI-Compatible APIs:**
+- **URL Format**: If your API base URL already includes a version (e.g., `/v3`), don't add `/v1` manually - the system will detect this automatically
+- **Doubao Specifics**:
+  - Model name is the endpoint ID (format: `ep-xxxxxxxxxxxxx-xxxxx`)
+  - Base URL includes `/api/v3`
+  - Minimum image size: 14×14 pixels
+- **Testing**: See `tests/README_DOUBAO.md` for Doubao testing guide
 
 ### Language Support
 

@@ -73,10 +73,27 @@ IMAGE_RESIZE=512x512
 GENERATE_DESCRIPTION=false
 MAX_WORKERS=5  # 并行处理线程数（1=串行，5=默认）
 
+# 数据库路径（支持环境变量引用）
+DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
+
 # OpenAI 兼容 API 配置
 # API_BASE=http://localhost:8000/v1
 # API_KEY=your-api-key
 ```
+
+**环境变量展开：**
+
+`.env` 文件支持使用 `${VAR}` 语法引用系统环境变量：
+```bash
+# 使用 ${HOME} 引用用户主目录
+DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
+FAISS_INDEX_DIR=${HOME}/.LocalImageSearch/faiss
+
+# 其他环境变量也可以使用
+CUSTOM_PATH=${HOME}/Documents/images
+```
+
+注意：必须使用 `${VAR}` 语法（带花括号），不支持 `$VAR` 格式。
 
 有了 `.env` 文件，运行命令时无需重复指定选项：
 ```bash
@@ -146,20 +163,42 @@ OLLAMA_NUM_PARALLEL=6 ollama serve
 
 ## 快速开始
 
-以下以 Ollama + qwen3-vl:4b 为例（需提前 `ollama pull qwen3-vl:4b`）:
+### 使用 Ollama（默认推荐）
+
+以 Ollama + qwen3-vl:4b 为例（需提前 `ollama pull qwen3-vl:4b`）:
 
 ```bash
 # 处理单个图片，生成 10 个中文标签
-python src/main.py --image-path /path/to/image.jpg --model qwen3-vl:4b --language zh
+uv run python src/main.py --image-path /path/to/image.jpg --model qwen3-vl:4b --language zh
 
 # 处理整个目录，同时生成标签和描述
-python src/main.py --image-path /path/to/images/ --model qwen3-vl:4b --language zh --description
+uv run python src/main.py --image-path /path/to/images/ --model qwen3-vl:4b --language zh --description
 
 # 搜索结果
-python src/index_builder.py search "人工智能" --mode tag
+uv run python src/index_builder.py search "人工智能" --mode tag
 ```
 
-处理完成后，标签存入 `data/image_tags.db`，索引自动构建。
+### 使用豆包（Doubao）
+
+```bash
+# 配置豆包环境变量（首次使用需配置）
+export DOUBAO_API_KEY="your-doubao-api-key"
+export DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
+export DOUBAO_MODEL_NAME="ep-xxxxxxxxxxxxx-xxxxx"
+
+# 使用豆包标注图片
+uv run python src/main.py \
+  --image-path /path/to/images/ \
+  --model-type openai \
+  --model "$DOUBAO_MODEL_NAME" \
+  --api-base "$DOUBAO_BASE_URL" \
+  --api-key "$DOUBAO_API_KEY" \
+  --language zh
+```
+
+处理完成后，标签存入 `~/.LocalImageSearch/data/image_tags.db`，索引自动构建。
+
+> **豆包测试指南**：详见 `tests/README_DOUBAO.md` 了解测试方法和故障排除。
 
 ---
 
@@ -170,23 +209,78 @@ python src/index_builder.py search "人工智能" --mode tag
 | 类型 | `--model-type` | 说明 |
 |------|----------------|------|
 | Ollama | `ollama`（默认） | 本地 Ollama 服务，端口 11434 |
-| OpenAI 兼容 | `openai` | vLLM / 云厂商 API 均可 |
+| OpenAI 兼容 | `openai` | vLLM / 豆包 / OpenAI / Together AI 等云厂商 API |
 | 本地模型 | `local` | 通过 Transformers 直接加载模型文件 |
 | Gemini | `gemini` | Google Gemini API |
 
+#### 使用 Ollama（默认推荐）
+
 ```bash
-# Ollama (默认)
-python src/main.py --image-path ./images --model qwen3-vl:4b
+# Ollama 使用默认模型
+uv run python src/main.py --image-path ./images
 
-# OpenAI 兼容 API
-python src/main.py --image-path ./images \
-  --model qwen-vl-chat \
+# Ollama 指定模型
+uv run python src/main.py --image-path ./images --model qwen3-vl:4b
+```
+
+#### 使用 OpenAI 兼容 API
+
+**通用 OpenAI 兼容 API：**
+```bash
+uv run python src/main.py --image-path ./images \
   --model-type openai \
+  --model your-model-name \
   --api-base http://localhost:8000/v1 \
-  --api-key your-key
+  --api-key your-api-key
+```
 
-# 本地模型文件
-python src/main.py --image-path ./images \
+**豆包（Doubao）API：**
+
+豆包 API 使用不同的 URL 结构，base URL 已包含版本号（`/api/v3`）：
+
+```bash
+# 步骤 1：设置环境变量（推荐）
+export DOUBAO_API_KEY="your-doubao-api-key"
+export DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
+export DOUBAO_MODEL_NAME="ep-xxxxxxxxxxxxx-xxxxx"
+
+# 步骤 2：使用豆包运行
+uv run python src/main.py --image-path ./images \
+  --model-type openai \
+  --model "$DOUBAO_MODEL_NAME" \
+  --api-base "$DOUBAO_BASE_URL" \
+  --api-key "$DOUBAO_API_KEY" \
+  --language zh
+```
+
+**使用 .env 文件配置豆包：**
+```bash
+# 创建 .env 文件
+cat > .env << 'EOF'
+MODEL_TYPE=openai
+MODEL_NAME=${DOUBAO_MODEL_NAME}
+API_BASE=${DOUBAO_BASE_URL}
+API_KEY=${DOUBAO_API_KEY}
+LANGUAGE=zh
+TAG_COUNT=10
+MAX_WORKERS=5
+EOF
+
+# 运行（自动使用环境变量配置）
+uv run python src/main.py --image-path ./images
+```
+
+**OpenAI 兼容 API 重要说明：**
+- **URL 格式**：如果 API base URL 已包含版本号（如 `/v3`），系统会自动检测，无需手动添加 `/v1`
+- **豆包特殊配置**：
+  - 模型名称是 endpoint ID（格式：`ep-xxxxxxxxxxxxx-xxxxx`）
+  - Base URL 包含 `/api/v3`
+  - 最小图片尺寸：14×14 像素
+- **测试指南**：查看 `tests/README_DOUBAO.md` 了解豆包测试方法
+
+**本地模型文件：**
+```bash
+uv run python src/main.py --image-path ./images \
   --model minicpm-v \
   --model-type local \
   --model-path /path/to/MiniCPM-V-2_5

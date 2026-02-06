@@ -317,6 +317,7 @@ class OpenAICompatibleModel(BaseModel):
     def _call_openai_api(self, image_bytes: bytes, prompt: str) -> str:
         """Call OpenAI-compatible API"""
         import base64
+        from urllib.parse import urljoin
 
         image_b64 = base64.b64encode(image_bytes).decode("utf-8")
 
@@ -349,9 +350,28 @@ class OpenAICompatibleModel(BaseModel):
             "temperature": 0.1
         }
 
+        # Build endpoint URL
+        # For providers like Doubao where base_url already includes version (e.g., /api/v3),
+        # just append /chat/completions
+        # For standard OpenAI API, append /v1/chat/completions
+        base_url = self.api_base
+        if not base_url.endswith('/'):
+            base_url += '/'
+
+        # Check if base_url already contains a version number in the path
+        has_version = any(f'/v{i}' in self.api_base for i in range(1, 10))
+
+        if has_version:
+            # Base URL already has version, just add endpoint
+            endpoint_url = urljoin(base_url, "chat/completions")
+        else:
+            # Standard OpenAI format needs /v1
+            endpoint_url = urljoin(base_url, "v1/chat/completions")
+
+
         try:
             response = requests.post(
-                f"{self.api_base}/v1/chat/completions",
+                endpoint_url,
                 headers=headers,
                 json=payload,
                 timeout=60
