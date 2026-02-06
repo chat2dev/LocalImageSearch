@@ -171,186 +171,43 @@ npm install
 cd ..
 ```
 
-### 5. Configuration (Optional)
-
-Create a `.env` file to set default values for common options:
-
-```bash
-# Copy the example configuration
-cp .env.example .env
-
-# Edit .env with your preferred settings
-nano .env
-```
-
-**Configuration Priority:**
-1. **CLI arguments** (highest) - Override everything
-2. **.env file** - Default values for repeated use
-3. **Built-in defaults** (lowest)
-
-**Example .env file:**
-```bash
-# Model configuration
-MODEL_NAME=qwen3-vl:4b
-MODEL_TYPE=ollama
-LANGUAGE=zh
-TAG_COUNT=10
-
-# Image processing
-IMAGE_RESIZE=512x512
-GENERATE_DESCRIPTION=false
-MAX_WORKERS=5  # Parallel processing workers (1=serial, 5=default)
-BATCH_SIZE=100  # Max images per run, excluding already processed (0=unlimited)
-
-# Database paths (supports environment variables)
-DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
-
-# For OpenAI-compatible APIs
-# API_BASE=http://localhost:8000/v1
-# API_KEY=your-api-key
-```
-
-**Environment Variable Expansion:**
-
-The `.env` file supports referencing system environment variables using `${VAR}` syntax:
-```bash
-# Use ${HOME} for user home directory
-DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
-FAISS_INDEX_DIR=${HOME}/.LocalImageSearch/faiss
-
-# Other environment variables work too
-CUSTOM_PATH=${HOME}/Documents/images
-```
-
-Note: Use `${VAR}` syntax (with braces), not `$VAR`.
-
-With a `.env` file, you can run commands without repeating options:
-```bash
-# .env values will be used automatically
-uv run python src/main.py --image-path ~/Pictures
-
-# CLI arguments override .env values
-uv run python src/main.py --image-path ~/Pictures --language en --tag-count 20
-```
-
-**Parallel Processing Recommendations:**
-
-Configure `MAX_WORKERS` based on your system memory:
-
-| System Memory | Recommended MAX_WORKERS | Notes |
-|--------------|-------------------------|-------|
-| 8GB or less  | 1-2                     | Use serial or minimal parallel processing |
-| 16GB         | 3-5                     | Default configuration works well |
-| 32GB         | 5-10                    | Can handle higher parallelism |
-| 64GB+        | 10-20                   | Maximum performance for large batches |
-
-**Performance Expectations:**
-- **Small batches (<20 images)**: 6-9% speedup with parallel processing
-- **Large batches (>100 images)**: May see more improvement, but limited by Ollama
-- **Bottleneck**: Waiting for Ollama API responses (I/O bound)
-- **Limitation**: Ollama may serialize requests internally, limiting parallel gains
-- **Warning**: Too many workers (>5) can cause API timeouts
-
-**Benchmark Results:**
-
-*Test 1: 5 images*
-- Serial (1 worker): 22.8s
-- Parallel (3 workers): 20.8s (9% faster)
-- Parallel (5 workers): 19.4s (15% faster)
-
-*Test 2: 17 images*
-- Serial (1 worker): 95.9s
-- Parallel (3 workers): 89.6s (6.6% faster)
-- Parallel (5 workers): 87.8s (8.5% faster)
-- Parallel (10 workers): 80.1s but 3 failures (timeouts)
-
-**Ollama Configuration Optimization:**
-
-To get better parallel performance, configure Ollama to handle more concurrent requests:
-
-```bash
-# Stop Ollama if running
-pkill ollama
-
-# Start Ollama with increased parallelism (allows 6 concurrent requests)
-OLLAMA_NUM_PARALLEL=6 ollama serve
-```
-
-With this configuration, performance improves:
-- 3 workers: 8.5% faster (vs 6.6% without)
-- 5 workers: 9.3% faster (vs 8.5% without)
-
-**Considerations:**
-- Each worker loads the model into memory
-- Vision-language models typically use 2-4GB per worker
-- Monitor system resources (RAM, CPU) during processing
-- Reduce `MAX_WORKERS` if you experience out-of-memory errors
-- For small batches, serial processing may be sufficient
-- **Recommended setup**: `OLLAMA_NUM_PARALLEL=6` with `MAX_WORKERS=5`
+That's it! You can now start using the system with default settings. For advanced configuration options, see the [Configuration](#configuration) section.
 
 ---
 
 ## Quick Start
 
-### Step 0: Initialize Database (First-Time Setup)
+### Step 1: Initialize Database
 
-**Important**: Initialize the database before first use:
+First-time setup - initialize the database:
 
 ```bash
-# Initialize database with schema
 uv run python scripts/init_database.py
 ```
 
-This creates the database at `~/.LocalImageSearch/data/image_tags.db` with all necessary tables and indexes. You only need to do this once.
+This creates `~/.LocalImageSearch/data/image_tags.db` with all necessary tables.
 
-> **Note**: If you skip this step and start the Web UI directly, you'll see errors because the database tables don't exist yet.
+### Step 2: Tag Images (CLI)
 
-### Option 1: Command Line Interface
+Tag your images using default settings:
 
-Tag images and search from the command line:
-
-**Using Ollama (default):**
 ```bash
-# Tag a single image with 10 Chinese tags
-uv run python src/main.py --image-path /path/to/image.jpg --model qwen3-vl:4b --language zh
-
-# Tag an entire directory and generate descriptions
-uv run python src/main.py --image-path /path/to/images/ --model qwen3-vl:4b --language zh --description
-
-# Process large collections in batches (100 images at a time, default)
-uv run python src/main.py --image-path /path/to/large-collection/ --batch-size 100
-
-# Force reprocess already tagged images
-uv run python src/main.py --image-path /path/to/images/ --reprocess
+# Tag a directory with Chinese tags (default)
+uv run python src/main.py --image-path /path/to/images/
 
 # Search the results
 uv run python src/index_builder.py search "人工智能" --mode tag
 ```
 
-**Using Doubao (豆包):**
-```bash
-# Configure Doubao environment variables (one-time setup)
-export DOUBAO_API_KEY="your-doubao-api-key"
-export DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
-export DOUBAO_MODEL_NAME="ep-xxxxxxxxxxxxx-xxxxx"
+The system will:
+- Process images with the Qwen3-VL model (via Ollama)
+- Generate 10 Chinese tags per image
+- Save to `~/.LocalImageSearch/data/image_tags.db`
+- Build search indexes automatically
 
-# Tag images with Doubao
-uv run python src/main.py \
-  --image-path /path/to/images/ \
-  --model-type openai \
-  --model "$DOUBAO_MODEL_NAME" \
-  --api-base "$DOUBAO_BASE_URL" \
-  --api-key "$DOUBAO_API_KEY" \
-  --language zh
-```
+### Step 3: Browse Images (Web UI)
 
-Tags are saved to `~/.LocalImageSearch/data/image_tags.db` and indexes are built automatically on completion.
-
-> **Testing Doubao**: See `tests/README_DOUBAO.md` for detailed testing guide and troubleshooting.
-
-### Option 2: Web UI (Recommended)
-
-Start the web interface for a better browsing experience:
+Start the web interface:
 
 ```bash
 cd ui
@@ -359,25 +216,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-**Web UI Features:**
-- **Bilingual Interface**: Switch between Chinese and English
-- **Tag Cloud**: Browse images by popular tags (configurable TOP 20/100)
-- **Multi-tag Filtering**: AND-based filtering using inverted index
-- **Full-text Search**: Search across tags and descriptions
-- **Responsive Grid**: Image gallery with pagination
-- **Image Viewer**: Modal viewer with fullscreen support
+Features: tag cloud, multi-tag filtering, full-text search, image viewer.
 
-**Database Location**: The UI reads from `~/.LocalImageSearch/data/image_tags.db`.
-
-**Recommended Workflow:**
-1. Initialize database (first time only): `uv run python scripts/init_database.py`
-2. Tag images using CLI: `uv run python src/main.py --image-path ~/Pictures`
-3. Start Web UI: `cd ui && npm run dev`
-4. Browse and search your tagged images at http://localhost:3000
-
-> **Tip**: You can run the tagging command multiple times with different directories. New images will be added to the existing database.
-
-For detailed Web UI configuration, see [ui/README.md](ui/README.md).
+> **Tip**: You can tag multiple directories. New images will be added to the existing database.
 
 ---
 
@@ -554,6 +395,187 @@ python src/main.py --image-path ./images --model qwen3-vl:4b --language zh \
 ```
 
 Supported template variables: `{language}`, `{language_name}`, `{tag_count}`.
+
+---
+
+## Configuration
+
+For advanced use cases, you can customize the system behavior using `.env` files or CLI arguments.
+
+### Configuration Priority
+
+1. **CLI arguments** (highest) - Override everything
+2. **.env file** - Default values for repeated use
+3. **Built-in defaults** (lowest)
+
+### Creating a .env File
+
+```bash
+# Copy the example configuration
+cp .env.example .env
+
+# Edit with your settings
+nano .env
+```
+
+**Example .env file:**
+```bash
+# Model configuration
+MODEL_NAME=qwen3-vl:4b
+MODEL_TYPE=ollama
+LANGUAGE=zh
+TAG_COUNT=10
+
+# Image processing
+IMAGE_RESIZE=512x512
+GENERATE_DESCRIPTION=false
+MAX_WORKERS=5  # Parallel processing workers (1=serial, 5=default)
+BATCH_SIZE=100  # Max images per run, excluding already processed (0=unlimited)
+
+# Database paths (supports environment variables)
+DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
+
+# For OpenAI-compatible APIs
+# API_BASE=http://localhost:8000/v1
+# API_KEY=your-api-key
+```
+
+With a `.env` file, commands become simpler:
+```bash
+# .env values will be used automatically
+uv run python src/main.py --image-path ~/Pictures
+
+# CLI arguments override .env values
+uv run python src/main.py --image-path ~/Pictures --language en --tag-count 20
+```
+
+### Environment Variable Expansion
+
+The `.env` file supports referencing system environment variables using `${VAR}` syntax:
+
+```bash
+# Use ${HOME} for user home directory
+DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
+FAISS_INDEX_DIR=${HOME}/.LocalImageSearch/faiss
+
+# Other environment variables work too
+CUSTOM_PATH=${HOME}/Documents/images
+```
+
+**Note**: Use `${VAR}` syntax (with braces), not `$VAR`.
+
+### Parallel Processing Configuration
+
+Configure `MAX_WORKERS` based on your system memory:
+
+| System Memory | Recommended MAX_WORKERS | Notes |
+|--------------|-------------------------|-------|
+| 8GB or less  | 1-2                     | Use serial or minimal parallel processing |
+| 16GB         | 3-5                     | Default configuration works well |
+| 32GB         | 5-10                    | Can handle higher parallelism |
+| 64GB+        | 10-20                   | Maximum performance for large batches |
+
+**Performance Expectations:**
+- **Small batches (<20 images)**: 6-9% speedup with parallel processing
+- **Large batches (>100 images)**: May see more improvement, but limited by Ollama
+- **Bottleneck**: Waiting for Ollama API responses (I/O bound)
+- **Limitation**: Ollama may serialize requests internally, limiting parallel gains
+- **Warning**: Too many workers (>5) can cause API timeouts
+
+**Benchmark Results:**
+
+*Test 1: 5 images*
+- Serial (1 worker): 22.8s
+- Parallel (3 workers): 20.8s (9% faster)
+- Parallel (5 workers): 19.4s (15% faster)
+
+*Test 2: 17 images*
+- Serial (1 worker): 95.9s
+- Parallel (3 workers): 89.6s (6.6% faster)
+- Parallel (5 workers): 87.8s (8.5% faster)
+- Parallel (10 workers): 80.1s but 3 failures (timeouts)
+
+### Ollama Configuration Optimization
+
+To get better parallel performance, configure Ollama to handle more concurrent requests:
+
+```bash
+# Stop Ollama if running
+pkill ollama
+
+# Start Ollama with increased parallelism (allows 6 concurrent requests)
+OLLAMA_NUM_PARALLEL=6 ollama serve
+```
+
+With this configuration, performance improves:
+- 3 workers: 8.5% faster (vs 6.6% without)
+- 5 workers: 9.3% faster (vs 8.5% without)
+
+**Considerations:**
+- Each worker loads the model into memory
+- Vision-language models typically use 2-4GB per worker
+- Monitor system resources (RAM, CPU) during processing
+- Reduce `MAX_WORKERS` if you experience out-of-memory errors
+- For small batches, serial processing may be sufficient
+- **Recommended setup**: `OLLAMA_NUM_PARALLEL=6` with `MAX_WORKERS=5`
+
+### Batch Processing
+
+To avoid long processing times, you can limit the number of images processed per run:
+
+```bash
+# Process 100 images at a time (default)
+uv run python src/main.py --image-path /path/to/large-collection/
+
+# Process 50 images at a time
+uv run python src/main.py --image-path /path/to/large-collection/ --batch-size 50
+
+# Process all images (no limit)
+uv run python src/main.py --image-path /path/to/large-collection/ --batch-size 0
+```
+
+**Note**: `BATCH_SIZE` only counts unprocessed images. Already-processed images are automatically skipped (unless you use `--reprocess`).
+
+### Using Doubao (豆包) API
+
+Doubao is ByteDance's vision-language model API. To use it:
+
+```bash
+# Step 1: Set environment variables (one-time setup)
+export DOUBAO_API_KEY="your-doubao-api-key"
+export DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
+export DOUBAO_MODEL_NAME="ep-xxxxxxxxxxxxx-xxxxx"
+
+# Step 2: Run with Doubao
+uv run python src/main.py \
+  --image-path /path/to/images/ \
+  --model-type openai \
+  --model "$DOUBAO_MODEL_NAME" \
+  --api-base "$DOUBAO_BASE_URL" \
+  --api-key "$DOUBAO_API_KEY" \
+  --language zh
+```
+
+**Using .env file with Doubao:**
+```bash
+# Create .env file
+cat > .env << 'EOF'
+MODEL_TYPE=openai
+MODEL_NAME=${DOUBAO_MODEL_NAME}
+API_BASE=${DOUBAO_BASE_URL}
+API_KEY=${DOUBAO_API_KEY}
+LANGUAGE=zh
+TAG_COUNT=10
+MAX_WORKERS=5
+EOF
+
+# Run (will use environment variables)
+uv run python src/main.py --image-path ./images
+```
+
+**Performance**: Doubao processes images at approximately 6-8 seconds per image (using 512×512 resized images).
+
+> **Testing Doubao**: See `tests/README_DOUBAO.md` for detailed testing guide and troubleshooting.
 
 ---
 

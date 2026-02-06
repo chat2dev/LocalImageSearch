@@ -43,163 +43,54 @@ cd LocalImageSearch
 uv sync
 ```
 
-### 配置（可选）
-
-创建 `.env` 文件来设置常用选项的默认值：
-
-```bash
-# 复制示例配置文件
-cp .env.example .env
-
-# 编辑 .env 文件设置你的偏好
-nano .env
-```
-
-**配置优先级：**
-1. **CLI 参数**（最高）- 覆盖所有配置
-2. **.env 文件** - 重复使用的默认值
-3. **内置默认值**（最低）
-
-**示例 .env 文件：**
-```bash
-# 模型配置
-MODEL_NAME=qwen3-vl:4b
-MODEL_TYPE=ollama
-LANGUAGE=zh
-TAG_COUNT=10
-
-# 图片处理
-IMAGE_RESIZE=512x512
-GENERATE_DESCRIPTION=false
-MAX_WORKERS=5  # 并行处理线程数（1=串行，5=默认）
-BATCH_SIZE=100  # 每次最多处理图片数，不含已处理（0=不限制）
-
-# 数据库路径（支持环境变量引用）
-DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
-
-# OpenAI 兼容 API 配置
-# API_BASE=http://localhost:8000/v1
-# API_KEY=your-api-key
-```
-
-**环境变量展开：**
-
-`.env` 文件支持使用 `${VAR}` 语法引用系统环境变量：
-```bash
-# 使用 ${HOME} 引用用户主目录
-DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
-FAISS_INDEX_DIR=${HOME}/.LocalImageSearch/faiss
-
-# 其他环境变量也可以使用
-CUSTOM_PATH=${HOME}/Documents/images
-```
-
-注意：必须使用 `${VAR}` 语法（带花括号），不支持 `$VAR` 格式。
-
-有了 `.env` 文件，运行命令时无需重复指定选项：
-```bash
-# 自动使用 .env 中的值
-uv run python src/main.py --image-path ~/Pictures
-
-# CLI 参数会覆盖 .env 中的值
-uv run python src/main.py --image-path ~/Pictures --language en --tag-count 20
-```
-
-**并行度配置建议：**
-
-根据系统内存配置 `MAX_WORKERS`：
-
-| 系统内存     | 推荐 MAX_WORKERS | 说明 |
-|-------------|------------------|------|
-| 8GB 及以下  | 1-2              | 使用串行或最小并行度 |
-| 16GB        | 3-5              | 默认配置表现良好 |
-| 32GB        | 5-10             | 可使用较高并行度 |
-| 64GB 以上   | 10-20            | 大批量处理时性能最佳 |
-
-**性能预期：**
-- **小批量（<20张图片）**：并行处理提升 6-9%
-- **大批量（>100张图片）**：可能有更多提升，但受 Ollama 限制
-- **瓶颈**：等待 Ollama API 响应（I/O 密集型）
-- **限制**：Ollama 可能内部串行化请求，限制并行收益
-- **警告**：过多 workers（>5）可能导致 API 超时
-
-**基准测试结果：**
-
-*测试1：5张图片*
-- 串行（1 worker）：22.8秒
-- 并行（3 workers）：20.8秒（提升 9%）
-- 并行（5 workers）：19.4秒（提升 15%）
-
-*测试2：17张图片*
-- 串行（1 worker）：95.9秒
-- 并行（3 workers）：89.6秒（提升 6.6%）
-- 并行（5 workers）：87.8秒（提升 8.5%）
-- 并行（10 workers）：80.1秒但3张失败（超时）
-
-**Ollama 配置优化：**
-
-为了获得更好的并行性能，需要配置 Ollama 支持更多并发请求：
-
-```bash
-# 停止 Ollama（如果在运行）
-pkill ollama
-
-# 启动 Ollama 并增加并行度（允许6个并发请求）
-OLLAMA_NUM_PARALLEL=6 ollama serve
-```
-
-使用此配置后，性能提升更明显：
-- 3 workers：提升 8.5%（默认配置仅 6.6%）
-- 5 workers：提升 9.3%（默认配置仅 8.5%）
-
-**注意事项：**
-- 每个 worker 会将模型加载到内存中
-- 视觉语言模型通常每个 worker 占用 2-4GB 内存
-- 处理过程中监控系统资源（内存、CPU）使用情况
-- 如遇内存不足错误，请降低 `MAX_WORKERS` 值
-- 小批量处理时，串行模式可能已足够
-- **推荐配置**：`OLLAMA_NUM_PARALLEL=6` + `MAX_WORKERS=5`
+完成！现在可以使用默认设置开始使用系统。高级配置选项请参见[配置](#配置)章节。
 
 ---
 
 ## 快速开始
 
-### 使用 Ollama（默认推荐）
+### 步骤 1：初始化数据库
 
-以 Ollama + qwen3-vl:4b 为例（需提前 `ollama pull qwen3-vl:4b`）:
+首次使用需要初始化数据库：
 
 ```bash
-# 处理单个图片，生成 10 个中文标签
-uv run python src/main.py --image-path /path/to/image.jpg --model qwen3-vl:4b --language zh
+uv run python scripts/init_database.py
+```
 
-# 处理整个目录，同时生成标签和描述
-uv run python src/main.py --image-path /path/to/images/ --model qwen3-vl:4b --language zh --description
+这将创建 `~/.LocalImageSearch/data/image_tags.db` 并建立所有必要的表结构。
+
+### 步骤 2：标注图片（命令行）
+
+使用默认设置标注图片：
+
+```bash
+# 标注目录中的图片（默认中文标签）
+uv run python src/main.py --image-path /path/to/images/
 
 # 搜索结果
 uv run python src/index_builder.py search "人工智能" --mode tag
 ```
 
-### 使用豆包（Doubao）
+系统将：
+- 使用 Qwen3-VL 模型（通过 Ollama）处理图片
+- 为每张图片生成 10 个中文标签
+- 保存到 `~/.LocalImageSearch/data/image_tags.db`
+- 自动构建搜索索引
+
+### 步骤 3：浏览图片（Web 界面）
+
+启动 Web 界面：
 
 ```bash
-# 配置豆包环境变量（首次使用需配置）
-export DOUBAO_API_KEY="your-doubao-api-key"
-export DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
-export DOUBAO_MODEL_NAME="ep-xxxxxxxxxxxxx-xxxxx"
-
-# 使用豆包标注图片
-uv run python src/main.py \
-  --image-path /path/to/images/ \
-  --model-type openai \
-  --model "$DOUBAO_MODEL_NAME" \
-  --api-base "$DOUBAO_BASE_URL" \
-  --api-key "$DOUBAO_API_KEY" \
-  --language zh
+cd ui
+npm run dev
 ```
 
-处理完成后，标签存入 `~/.LocalImageSearch/data/image_tags.db`，索引自动构建。
+在浏览器中打开 [http://localhost:3000](http://localhost:3000)。
 
-> **豆包测试指南**：详见 `tests/README_DOUBAO.md` 了解测试方法和故障排除。
+功能：标签云、多标签筛选、全文搜索、图片查看器。
+
+> **提示**：可以多次运行标注命令处理不同目录，新图片会添加到现有数据库中。
 
 ---
 
@@ -351,6 +242,187 @@ python src/main.py --image-path ./images --model qwen3-vl:4b --language zh \
 ```
 
 Prompt 模板支持变量: `{language}`、`{language_name}`、`{tag_count}`。
+
+---
+
+## 配置
+
+对于高级使用场景，可以使用 `.env` 文件或 CLI 参数自定义系统行为。
+
+### 配置优先级
+
+1. **CLI 参数**（最高）- 覆盖所有配置
+2. **.env 文件** - 重复使用的默认值
+3. **内置默认值**（最低）
+
+### 创建 .env 文件
+
+```bash
+# 复制示例配置文件
+cp .env.example .env
+
+# 编辑配置
+nano .env
+```
+
+**示例 .env 文件：**
+```bash
+# 模型配置
+MODEL_NAME=qwen3-vl:4b
+MODEL_TYPE=ollama
+LANGUAGE=zh
+TAG_COUNT=10
+
+# 图片处理
+IMAGE_RESIZE=512x512
+GENERATE_DESCRIPTION=false
+MAX_WORKERS=5  # 并行处理线程数（1=串行，5=默认）
+BATCH_SIZE=100  # 每次最多处理图片数，不含已处理（0=不限制）
+
+# 数据库路径（支持环境变量引用）
+DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
+
+# OpenAI 兼容 API 配置
+# API_BASE=http://localhost:8000/v1
+# API_KEY=your-api-key
+```
+
+有了 `.env` 文件，命令会更简洁：
+```bash
+# 自动使用 .env 中的值
+uv run python src/main.py --image-path ~/Pictures
+
+# CLI 参数会覆盖 .env 中的值
+uv run python src/main.py --image-path ~/Pictures --language en --tag-count 20
+```
+
+### 环境变量展开
+
+`.env` 文件支持使用 `${VAR}` 语法引用系统环境变量：
+
+```bash
+# 使用 ${HOME} 引用用户主目录
+DB_PATH=${HOME}/.LocalImageSearch/data/image_tags.db
+FAISS_INDEX_DIR=${HOME}/.LocalImageSearch/faiss
+
+# 其他环境变量也可以使用
+CUSTOM_PATH=${HOME}/Documents/images
+```
+
+**注意**：必须使用 `${VAR}` 语法（带花括号），不支持 `$VAR` 格式。
+
+### 并行处理配置
+
+根据系统内存配置 `MAX_WORKERS`：
+
+| 系统内存     | 推荐 MAX_WORKERS | 说明 |
+|-------------|------------------|------|
+| 8GB 及以下  | 1-2              | 使用串行或最小并行度 |
+| 16GB        | 3-5              | 默认配置表现良好 |
+| 32GB        | 5-10             | 可使用较高并行度 |
+| 64GB 以上   | 10-20            | 大批量处理时性能最佳 |
+
+**性能预期：**
+- **小批量（<20张图片）**：并行处理提升 6-9%
+- **大批量（>100张图片）**：可能有更多提升，但受 Ollama 限制
+- **瓶颈**：等待 Ollama API 响应（I/O 密集型）
+- **限制**：Ollama 可能内部串行化请求，限制并行收益
+- **警告**：过多 workers（>5）可能导致 API 超时
+
+**基准测试结果：**
+
+*测试1：5张图片*
+- 串行（1 worker）：22.8秒
+- 并行（3 workers）：20.8秒（提升 9%）
+- 并行（5 workers）：19.4秒（提升 15%）
+
+*测试2：17张图片*
+- 串行（1 worker）：95.9秒
+- 并行（3 workers）：89.6秒（提升 6.6%）
+- 并行（5 workers）：87.8秒（提升 8.5%）
+- 并行（10 workers）：80.1秒但3张失败（超时）
+
+### Ollama 配置优化
+
+为了获得更好的并行性能，需要配置 Ollama 支持更多并发请求：
+
+```bash
+# 停止 Ollama（如果在运行）
+pkill ollama
+
+# 启动 Ollama 并增加并行度（允许6个并发请求）
+OLLAMA_NUM_PARALLEL=6 ollama serve
+```
+
+使用此配置后，性能提升更明显：
+- 3 workers：提升 8.5%（默认配置仅 6.6%）
+- 5 workers：提升 9.3%（默认配置仅 8.5%）
+
+**注意事项：**
+- 每个 worker 会将模型加载到内存中
+- 视觉语言模型通常每个 worker 占用 2-4GB 内存
+- 处理过程中监控系统资源（内存、CPU）使用情况
+- 如遇内存不足错误，请降低 `MAX_WORKERS` 值
+- 小批量处理时，串行模式可能已足够
+- **推荐配置**：`OLLAMA_NUM_PARALLEL=6` + `MAX_WORKERS=5`
+
+### 批处理配置
+
+为避免处理时间过长，可以限制每次运行处理的图片数：
+
+```bash
+# 每次处理 100 张图片（默认）
+uv run python src/main.py --image-path /path/to/large-collection/
+
+# 每次处理 50 张图片
+uv run python src/main.py --image-path /path/to/large-collection/ --batch-size 50
+
+# 处理所有图片（不限制）
+uv run python src/main.py --image-path /path/to/large-collection/ --batch-size 0
+```
+
+**注意**：`BATCH_SIZE` 只计数未处理的图片。已处理的图片会自动跳过（除非使用 `--reprocess`）。
+
+### 使用豆包（Doubao）API
+
+豆包是字节跳动的视觉语言模型 API。使用方法：
+
+```bash
+# 步骤 1：设置环境变量（首次使用）
+export DOUBAO_API_KEY="your-doubao-api-key"
+export DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
+export DOUBAO_MODEL_NAME="ep-xxxxxxxxxxxxx-xxxxx"
+
+# 步骤 2：使用豆包运行
+uv run python src/main.py \
+  --image-path /path/to/images/ \
+  --model-type openai \
+  --model "$DOUBAO_MODEL_NAME" \
+  --api-base "$DOUBAO_BASE_URL" \
+  --api-key "$DOUBAO_API_KEY" \
+  --language zh
+```
+
+**使用 .env 文件配置豆包：**
+```bash
+# 创建 .env 文件
+cat > .env << 'EOF'
+MODEL_TYPE=openai
+MODEL_NAME=${DOUBAO_MODEL_NAME}
+API_BASE=${DOUBAO_BASE_URL}
+API_KEY=${DOUBAO_API_KEY}
+LANGUAGE=zh
+TAG_COUNT=10
+MAX_WORKERS=5
+EOF
+
+# 运行（会自动使用环境变量）
+uv run python src/main.py --image-path ./images
+```
+
+**性能**：豆包处理单张图片约需 6-8 秒（使用 512×512 缩放后的图片）。
+
+> **豆包测试指南**：详见 `tests/README_DOUBAO.md` 了解测试方法和故障排除。
 
 ---
 
